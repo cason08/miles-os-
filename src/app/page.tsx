@@ -11,7 +11,7 @@ export default async function HomePage() {
           MilesOS
         </h1>
         <p className="mb-1 text-zinc-700 dark:text-zinc-300">
-          Welcome back, {session?.user?.name}
+          Welcome back, {session?.user?.name ?? session?.user?.email}
         </p>
         <p className="mb-6 text-sm text-green-700 dark:text-green-400">
           Authentication successful
