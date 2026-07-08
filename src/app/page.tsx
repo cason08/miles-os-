@@ -1,5 +1,5 @@
-import { auth, signOut } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
+import { auth } from "@/lib/auth";
+import { SignOutButton } from "@/components/sign-out-button";
 
 export default async function HomePage() {
   const session = await auth();
@@ -19,16 +19,7 @@ export default async function HomePage() {
         <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
           Next milestone: Connect Gmail
         </p>
-        <form
-          action={async () => {
-            "use server";
-            await signOut();
-          }}
-        >
-          <Button type="submit" variant="outline">
-            Sign out
-          </Button>
-        </form>
+        <SignOutButton />
       </main>
     </div>
   );
