@@ -1,3 +1,5 @@
+import { convert } from "html-to-text";
+
 const GMAIL_API_BASE = "https://gmail.googleapis.com/gmail/v1/users/me";
 
 export type GmailMessageSummary = {
@@ -64,6 +66,22 @@ export function findBodyPart(
     if (found) return found;
   }
   return null;
+}
+
+// Converts an email's HTML body into readable text -- for banks that send
+// transaction alerts as HTML-only (no text/plain alternative part), this is
+// the fallback source for the AI extraction pipeline. Preserves line breaks
+// around block elements and table cells rather than collapsing everything
+// into one run-on string, which a naive tag-strip would do.
+export function htmlToReadableText(html: string): string {
+  return convert(html, {
+    wordwrap: false,
+    // Without this, adjacent table cells are concatenated with no
+    // separator (e.g. "Transaction AmountSGD 45.80") -- bank alert emails
+    // commonly lay transaction details out in a table, so this is needed
+    // for genuinely readable output rather than a run-on string.
+    selectors: [{ selector: "table", format: "dataTable" }],
+  });
 }
 
 // Hardcoded for now -- specific to my own accounts, not a general bank
