@@ -41,6 +41,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       if (account?.provider === "google") {
         token.gmailConnected = account.scope?.includes("gmail.readonly") ?? false;
+        // Server-side only -- never copied onto `session` below. Short-lived
+        // (~1hr); no refresh token is requested yet (see M2 plan), so an
+        // expired token surfaces as a plain Gmail API error, not silently
+        // refreshed.
+        token.gmailAccessToken = account.access_token;
       }
       return token;
     },
