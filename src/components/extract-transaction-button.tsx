@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { extractTransaction } from "@/app/debug/email/[id]/actions";
-
-type Result = { prompt: string; responseText: string } | { error: string };
+import { extractTransaction, type ExtractResult } from "@/app/debug/email/[id]/actions";
 
 export function ExtractTransactionButton({ plainText }: { plainText: string }) {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<Result | null>(null);
+  const [result, setResult] = useState<ExtractResult | null>(null);
 
   async function handleClick() {
     setLoading(true);
@@ -37,6 +35,29 @@ export function ExtractTransactionButton({ plainText }: { plainText: string }) {
 
           <h2>Raw AI response</h2>
           <pre style={{ whiteSpace: "pre-wrap" }}>{result.responseText}</pre>
+
+          <h2>Validation result</h2>
+          {result.validation.success ? (
+            <p style={{ color: "green" }}>✓ Validation succeeded</p>
+          ) : (
+            <>
+              <p style={{ color: "crimson" }}>✗ Validation failed</p>
+              <ul style={{ color: "crimson" }}>
+                {result.validation.errors.map((error) => (
+                  <li key={error}>{error}</li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          {result.validation.success && (
+            <>
+              <h2>Parsed Transaction object</h2>
+              <pre style={{ whiteSpace: "pre-wrap" }}>
+                {JSON.stringify(result.validation.transaction, null, 2)}
+              </pre>
+            </>
+          )}
         </>
       )}
     </div>

@@ -13,7 +13,7 @@ Return exactly one JSON object with this schema and nothing else:
   "amount": number,               // absolute transaction amount as a number -- no currency symbol, no thousands separator
   "currency": string,             // ISO 4217 currency code, e.g. "SGD", "USD"
   "transactionKind": string,      // one of: "purchase", "refund", "transfer", "withdrawal", "payment", "other"
-  "card": string | null,          // card name and/or last 4 digits exactly as they appear, or null if the email does not mention a card
+  "cardLastFour": string | null,  // card name and/or last 4 digits exactly as they appear, or null if the email does not mention a card
   "date": string,                 // transaction date in ISO 8601 format: YYYY-MM-DD
   "confidence": number,           // your confidence in this extraction, between 0 and 1
   "reasoning": string             // one or two sentences on how you arrived at these values, referencing the specific email text you used
