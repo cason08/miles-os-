@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { extractTransaction, type ExtractResult } from "@/app/debug/email/[id]/actions";
 
-export function ExtractTransactionButton({ plainText }: { plainText: string }) {
+export function ExtractTransactionButton({ emailText }: { emailText: string }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ExtractResult | null>(null);
 
   async function handleClick() {
     setLoading(true);
     setResult(null);
-    const outcome = await extractTransaction(plainText);
+    const outcome = await extractTransaction(emailText);
     setResult(outcome);
     setLoading(false);
   }

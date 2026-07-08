@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { getGmailAccessToken } from "@/lib/gmail-token";
-import { fetchMessageFull, findBodyPart, headerValue, type GmailMessageFull } from "@/lib/gmail";
+import {
+  fetchMessageFull,
+  findBodyPart,
+  headerValue,
+  htmlToReadableText,
+  type GmailMessageFull,
+} from "@/lib/gmail";
 import { ExtractTransactionButton } from "@/components/extract-transaction-button";
 
 const backLink = (
@@ -49,6 +55,11 @@ export default async function DebugEmailPage({
   const plainText = message ? findBodyPart(message.payload, "text/plain") : null;
   const html = message ? findBodyPart(message.payload, "text/html") : null;
 
+  // Best available human-readable content for the extraction pipeline:
+  // prefer text/plain; if the email is HTML-only, fall back to readable
+  // text converted from text/html rather than sending raw markup to Claude.
+  const emailTextForExtraction = plainText ?? (html ? htmlToReadableText(html) : null);
+
   return (
     <main style={{ fontFamily: "monospace", padding: 24 }}>
       {backLink}
@@ -85,10 +96,10 @@ export default async function DebugEmailPage({
             <pre style={{ whiteSpace: "pre-wrap" }}>{JSON.stringify(message, null, 2)}</pre>
           </details>
 
-          {plainText && (
+          {emailTextForExtraction && (
             <>
               <h2>AI Prompt Playground</h2>
-              <ExtractTransactionButton plainText={plainText} />
+              <ExtractTransactionButton emailText={emailTextForExtraction} />
             </>
           )}
         </>
