@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { SignOutButton } from "@/components/sign-out-button";
+import { ConnectGmailButton } from "@/components/connect-gmail-button";
 
 export default async function HomePage() {
   const session = await auth();
@@ -19,15 +20,22 @@ export default async function HomePage() {
         <h1 className="mb-4 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
           MilesOS
         </h1>
-        <p className="mb-1 text-zinc-700 dark:text-zinc-300">
-          Welcome back, {session?.user?.name ?? session?.user?.email}
+        <p className="mb-6 text-zinc-700 dark:text-zinc-300">
+          Welcome back, {session.user.name ?? session.user.email}
         </p>
-        <p className="mb-6 text-sm text-green-700 dark:text-green-400">
-          Authentication successful
-        </p>
-        <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
-          Next milestone: Connect Gmail
-        </p>
+        <div className="mb-6 space-y-1 text-sm">
+          <p className="text-green-700 dark:text-green-400">Google ✓ Connected</p>
+          {session.gmailConnected ? (
+            <p className="text-green-700 dark:text-green-400">Gmail ✓ Connected</p>
+          ) : (
+            <p className="text-zinc-500 dark:text-zinc-400">Gmail not connected</p>
+          )}
+        </div>
+        {!session.gmailConnected && (
+          <div className="mb-6">
+            <ConnectGmailButton />
+          </div>
+        )}
         <SignOutButton />
       </main>
     </div>

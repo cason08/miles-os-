@@ -16,17 +16,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      // Requesting the Gmail scope by default (not only from the
+      // "Connect Gmail" button) means every sign-in -- including a plain
+      // re-login -- reports the user's *current* grant in `account.scope`.
+      // Google auto-approves already-granted scopes silently and only
+      // prompts for genuinely new ones, so this is how "Gmail connected"
+      // status survives sign-out without a database: we re-derive it
+      // from Google each time rather than storing it ourselves.
+      authorization: {
+        params: {
+          scope: "openid email profile https://www.googleapis.com/auth/gmail.readonly",
+        },
+      },
     }),
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    // With the JWT strategy, `user` (from the Google profile) is only
-    // passed in on initial sign-in -- persist what we need onto the
-    // token here so it survives subsequent requests.
-    jwt({ token, user }) {
+    // `user`/`account` are only passed in on sign-in (not subsequent
+    // requests) -- persist what we need onto the token so it survives.
+    jwt({ token, user, account }) {
       if (user) {
         token.name = user.name;
         token.email = user.email;
+      }
+      if (account?.provider === "google") {
+        token.gmailConnected = account.scope?.includes("gmail.readonly") ?? false;
       }
       return token;
     },
@@ -37,6 +51,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.name = token.name;
         session.user.email = token.email ?? session.user.email;
       }
+      session.gmailConnected = token.gmailConnected ?? false;
       return session;
     },
   },
