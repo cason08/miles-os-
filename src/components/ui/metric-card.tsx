@@ -34,6 +34,7 @@ function MetricCard({
   className,
 }: {
   label: string
+  /** Pre-formatted, currency/unit included, e.g. "S$142,918.20" or "3,240 mi". */
   value: string
   accent?: MetricAccent
   size?: "default" | "hero"

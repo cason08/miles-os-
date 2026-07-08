@@ -32,8 +32,11 @@ function BudgetCard({
   className,
 }: {
   category: string
+  /** Pre-formatted, currency included, e.g. "S$612". */
   spent: string
+  /** Pre-formatted, currency included, e.g. "S$700". */
   limit: string
+  /** spent / limit as a percentage; may exceed 100. */
   percent: number
   status: BudgetStatus
   className?: string
