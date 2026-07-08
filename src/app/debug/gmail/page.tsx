@@ -41,7 +41,7 @@ export default async function DebugGmailPage() {
         <pre style={{ whiteSpace: "pre-wrap", color: "crimson" }}>{error}</pre>
       )}
 
-      {!error && messages.length === 0 && <p>No messages found.</p>}
+      {!error && messages.length === 0 && <p>No supported bank emails found.</p>}
 
       {!error && messages.length > 0 && (
         <ul style={{ listStyle: "none", padding: 0 }}>

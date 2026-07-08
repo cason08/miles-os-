@@ -66,11 +66,27 @@ export function findBodyPart(
   return null;
 }
 
+// Hardcoded for now -- specific to my own accounts, not a general bank
+// list/config system. Add more addresses here (e.g. UOB) when needed.
+export const SUPPORTED_BANK_SENDERS = [
+  "ibanking.alert@dbs.com",
+  "alerts@citibank.com.sg",
+  "noreply@notify.ocbc.com",
+] as const;
+
+export function buildBankSenderQuery(senders: readonly string[]): string {
+  return senders.map((sender) => `from:${sender}`).join(" OR ");
+}
+
 export async function fetchRecentMessages(
   accessToken: string,
   count = 20,
 ): Promise<GmailMessageSummary[]> {
-  const list = (await gmailFetch(`/messages?maxResults=${count}`, accessToken)) as {
+  const query = encodeURIComponent(buildBankSenderQuery(SUPPORTED_BANK_SENDERS));
+  const list = (await gmailFetch(
+    `/messages?maxResults=${count}&q=${query}`,
+    accessToken,
+  )) as {
     messages?: { id: string }[];
   };
   const ids = list.messages ?? [];
