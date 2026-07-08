@@ -1,6 +1,8 @@
 # MilesOS — Design System
 
-Companion to [EXPERIENCE.md](./EXPERIENCE.md) (how it should feel), [NAVIGATION.md](./NAVIGATION.md) (how it's organised), and [PRODUCT.md](./PRODUCT.md) (Principle 5: beautiful enough to enjoy opening every day). This defines a small, consistent visual language — enough for consistency, not a pursuit of perfection. Where this document is silent on something, prefer the simplest option consistent with §1 rather than inventing a new rule.
+Companion to [EXPERIENCE.md](./EXPERIENCE.md) (how it should feel), [NAVIGATION.md](./NAVIGATION.md) (how it's organised), [PRODUCT.md](./PRODUCT.md) (Principle 5: beautiful enough to enjoy opening every day), and [VISUAL_DIRECTION.md](./VISUAL_DIRECTION.md) (concrete token values — colour, type scale, spacing, component code — for what's described here). This defines a small, consistent visual language — enough for consistency, not a pursuit of perfection. Where this document is silent on something, prefer the simplest option consistent with §1 rather than inventing a new rule.
+
+**This document describes MilesOS's visual system as currently implemented** — a living record, not a fixed target. Where the longer-range artistic direction is ahead of what's actually built, the relevant section says so explicitly under a **Future Visual Evolution** note, rather than describing an aspiration as if it's already on screen. A "Future Visual Evolution" note is intentionally deferred, not forgotten: it gets picked up once the interface has been lived with and carries real product data, not before.
 
 This governs every real product screen going forward. It does not apply to internal developer/debug tooling (anything under `/debug/*`), which stays deliberately plain and utilitarian — that's a diagnostic surface, not a product experience.
 
@@ -23,10 +25,14 @@ The interface should feel like an operating system, not a dashboard.
 
 Dark mode first — it is the default, not an alternative theme bolted on later.
 
-- **Avoid pure black.** Use deep blue-grey tones for the base background.
-- **Subtle radial gradients**, not a flat fill — the background should feel cinematic, like it has depth, not like a solid rectangle.
-- **An extremely light grain texture** over the background adds physicality without reading as decoration.
-- Backgrounds are felt, not noticed. If someone consciously registers the gradient or grain, it's too strong — pull it back.
+**Current implementation:**
+- A flat, near-black background (not pure black) with a very subtle cool/blue-grey tint — avoids the starkness of true black while staying calm and unobtrusive.
+- Single flat fill; no gradient or texture layer yet.
+
+**Future visual evolution** (deferred until the interface has been lived with and carries real product data — see the intro note above):
+- Subtle radial gradients in place of the flat fill, so the background feels cinematic and has depth rather than reading as a solid rectangle.
+- An extremely light grain texture over the background, adding physicality without reading as decoration.
+- Backgrounds should be felt, not noticed — once added, if someone consciously registers the gradient or grain, it's too strong and should be pulled back.
 
 ## 3. Colour System
 
@@ -36,7 +42,7 @@ Approximately **95% monochrome.** One restrained accent colour system carries ev
 - **Success** — positive movement, on-track budgets, gains.
 - **Warning** — approaching a limit or cap: needs attention soon, not urgently.
 - **Error** — exceeded, broken, or failed states only. Kept rare so it stays meaningful (EXPERIENCE.md: red is earned, not default).
-- **Neutral** — a deep blue-grey ramp (§2) carrying nearly everything: text, borders, surfaces, backgrounds.
+- **Neutral** — a near-black, subtly blue-grey-tinted ramp (§2) carrying nearly everything: text, borders, surfaces, backgrounds.
 - **Financial colours** — one consistent accent each for Assets, Liabilities, and Reward Programmes, used only to tag/group entities by type (a dot, a small accent, a badge) — never as a full card or page background. Liabilities are not automatically coloured as an error state: owing money on a credit card is normal, not a failure.
 
 ## 4. Typography
@@ -60,10 +66,14 @@ Approximately **95% monochrome.** One restrained accent colour system carries ev
 
 Cards should feel premium and tactile — engineered, not decorated. Avoid obvious glassmorphism (heavy blur, obvious frosted panels).
 
-- **Soft elevated surfaces** rather than boxed containers — a card should read as slightly raised off the background, not boxed in by it.
-- **Extremely subtle transparency and almost imperceptible gradients** — enough to add depth, never enough to be the point of the design.
-- **Thin hairline borders (1px)**, preferred over shadows for defining edges. Borders should almost disappear into the background, not draw a hard line around content.
-- **Minimal shadow.** Depth comes from subtle surface treatment and hairline borders first; shadow is a last resort, used lightly.
+**Current implementation:**
+- Flat card surface (`bg-card`) one lightness step up from the page background, with a thin hairline border (1px, low-opacity) defining the edge.
+- No shadow in dark mode — shadows read as murk on a near-black background; elevation comes from the background-lightness step plus the hairline border. Light mode may use a very soft shadow instead, since shadows read correctly on white.
+- One consistent radius and padding scale across every card, regardless of card type (see VISUAL_DIRECTION.md §5, §7).
+
+**Future visual evolution** (deferred, see §2):
+- Extremely subtle transparency and almost imperceptible gradients on the surface itself, so a card reads as slightly raised off the background rather than boxed in by a flat fill — a more pronounced "soft elevation" than the hairline-border treatment currently provides.
+- Shadow, if introduced further, stays a last resort layered on top of the surface treatment, never the primary source of depth.
 
 ## 7. Component Library
 
@@ -125,4 +135,4 @@ Loading should feel like "almost there," never like uncertainty.
 
 ---
 
-This is the permanent visual language for MilesOS unless explicitly overridden. Do not imitate another product's layout — capture this philosophy instead, so that every screen, however different its content, still feels like it belongs to the same product.
+The philosophy above — restraint, monochrome-plus-one-accent, information before decoration — is the permanent visual language for MilesOS unless explicitly overridden. Its physical execution evolves: sections marked **Future Visual Evolution** describe deliberate next steps, not deviations from the plan. Do not imitate another product's layout — capture this philosophy instead, so that every screen, however different its content, still feels like it belongs to the same product.
