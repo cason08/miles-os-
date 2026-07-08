@@ -1,8 +1,17 @@
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { SignOutButton } from "@/components/sign-out-button";
 
 export default async function HomePage() {
   const session = await auth();
+
+  // Defense in depth: this page must never render authenticated content
+  // without a real session, regardless of whether src/proxy.ts ran or
+  // behaved correctly upstream. `session.user` is only present on an
+  // actual signed-in session, never on an error-shaped auth() result.
+  if (!session?.user) {
+    redirect("/api/auth/signin");
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
