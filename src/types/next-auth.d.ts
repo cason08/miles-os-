@@ -10,5 +10,7 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
     gmailConnected?: boolean;
+    // Server-side only -- deliberately never mirrored onto Session above.
+    gmailAccessToken?: string;
   }
 }
