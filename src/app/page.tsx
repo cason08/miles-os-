@@ -23,16 +23,11 @@ export default async function HomePage() {
         <p className="mb-6 text-zinc-700 dark:text-zinc-300">
           Welcome back, {session.user.name ?? session.user.email}
         </p>
-        <div className="mb-6 space-y-1 text-sm">
-          <p className="text-green-700 dark:text-green-400">Google ✓ Connected</p>
-          {session.gmailConnected ? (
-            <p className="text-green-700 dark:text-green-400">Gmail ✓ Connected</p>
-          ) : (
-            <p className="text-zinc-500 dark:text-zinc-400">Gmail not connected</p>
-          )}
-        </div>
         {!session.gmailConnected && (
-          <div className="mb-6">
+          <div className="mb-6 rounded-md border border-amber-300 bg-amber-50 p-4 text-left dark:border-amber-900 dark:bg-amber-950">
+            <p className="mb-3 text-sm text-amber-800 dark:text-amber-300">
+              Gmail isn&apos;t connected. Connect it to enable automatic transaction import.
+            </p>
             <ConnectGmailButton />
           </div>
         )}
