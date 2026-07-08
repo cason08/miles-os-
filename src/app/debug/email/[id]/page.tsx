@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { getGmailAccessToken } from "@/lib/gmail-token";
 import { fetchMessageFull, findBodyPart, headerValue, type GmailMessageFull } from "@/lib/gmail";
+import { ExtractTransactionButton } from "@/components/extract-transaction-button";
 
 const backLink = (
   <p>
@@ -83,6 +84,13 @@ export default async function DebugEmailPage({
             <summary>Show raw JSON</summary>
             <pre style={{ whiteSpace: "pre-wrap" }}>{JSON.stringify(message, null, 2)}</pre>
           </details>
+
+          {plainText && (
+            <>
+              <h2>AI Prompt Playground</h2>
+              <ExtractTransactionButton plainText={plainText} />
+            </>
+          )}
         </>
       )}
     </main>
