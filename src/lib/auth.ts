@@ -35,6 +35,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     // `user`/`account` are only passed in on sign-in (not subsequent
     // requests) -- persist what we need onto the token so it survives.
     jwt({ token, user, account }) {
+      // TEMP DEBUG (stage 1+2+3): confirm what the OAuth callback actually
+      // handed us, and what we're about to write onto the token.
+      console.log("[gmail-debug:jwt] account present:", !!account);
+      if (account) {
+        console.log("[gmail-debug:jwt] account.provider:", account.provider);
+        console.log("[gmail-debug:jwt] account.access_token present:", !!account.access_token);
+        console.log(
+          "[gmail-debug:jwt] account.access_token length:",
+          account.access_token?.length ?? 0,
+        );
+        console.log("[gmail-debug:jwt] account.scope:", account.scope);
+      }
+
       if (user) {
         token.name = user.name;
         token.email = user.email;
@@ -46,6 +59,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // expired token surfaces as a plain Gmail API error, not silently
         // refreshed.
         token.gmailAccessToken = account.access_token;
+        console.log(
+          "[gmail-debug:jwt] wrote token.gmailAccessToken, present:",
+          !!token.gmailAccessToken,
+        );
       }
       return token;
     },
