@@ -137,5 +137,24 @@ export async function fetchRecentMessages(
     }),
   );
 
-  return messages.sort((a, b) => b.receivedAt.getTime() - a.receivedAt.getTime());
+  const sorted = messages.sort((a, b) => b.receivedAt.getTime() - a.receivedAt.getTime());
+
+  // TEMPORARY diagnostic logging for the rendering-pipeline investigation.
+  // Logs exactly what this function returns to its caller (i.e. exactly
+  // what /debug/gmail maps over to render) -- remove once root-caused.
+  console.log(
+    "[gmail-render-debug] first 10 of",
+    sorted.length,
+    "messages returned by fetchRecentMessages:",
+  );
+  for (const m of sorted.slice(0, 10)) {
+    console.log("[gmail-render-debug]", {
+      id: m.id,
+      sender: m.sender,
+      subject: m.subject,
+      receivedAt: m.receivedAt.toISOString(),
+    });
+  }
+
+  return sorted;
 }
