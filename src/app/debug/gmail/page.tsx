@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { getGmailAccessToken } from "@/lib/gmail-token";
 import { fetchRecentMessages, type GmailMessageSummary } from "@/lib/gmail";
@@ -45,13 +46,15 @@ export default async function DebugGmailPage() {
       {!error && messages.length > 0 && (
         <ul style={{ listStyle: "none", padding: 0 }}>
           {messages.map((message) => (
-            <li
-              key={message.id}
-              style={{ borderBottom: "1px solid #ccc", padding: "8px 0" }}
-            >
-              <div>{message.sender}</div>
-              <div>{message.subject}</div>
-              <div>{message.receivedAt.toLocaleString()}</div>
+            <li key={message.id} style={{ borderBottom: "1px solid #ccc" }}>
+              <Link
+                href={`/debug/email/${message.id}`}
+                style={{ display: "block", padding: "8px 0", color: "inherit" }}
+              >
+                <div>{message.sender}</div>
+                <div>{message.subject}</div>
+                <div>{message.receivedAt.toLocaleString()}</div>
+              </Link>
             </li>
           ))}
         </ul>

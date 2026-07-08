@@ -9,15 +9,5 @@ export async function getGmailAccessToken(): Promise<string | null> {
     req: { headers: await headers() },
     secret: process.env.AUTH_SECRET,
   });
-  // TEMP DEBUG (stage 4): confirm getToken() found *a* token at all, and
-  // separately whether that token carries gmailAccessToken.
-  console.log("[gmail-debug:getToken] token present:", !!token);
-  if (token) {
-    console.log("[gmail-debug:getToken] token keys:", Object.keys(token));
-    console.log(
-      "[gmail-debug:getToken] gmailAccessToken present:",
-      !!token.gmailAccessToken,
-    );
-  }
   return token?.gmailAccessToken ?? null;
 }
