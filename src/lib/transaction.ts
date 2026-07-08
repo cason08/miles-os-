@@ -43,6 +43,26 @@ function extractJsonObject(text: string): string {
   return withoutFences.slice(start, end + 1);
 }
 
+// Claude is asked for "cardLastFour exactly as it appears," which can come
+// back as e.g. "(-1551)" rather than a bare "1551". Strip everything but
+// digits and keep only the last four, so the Transaction contract always
+// contains clean data -- applied after extraction, before validation.
+function normalizeCardLastFour(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  const digits = value.replace(/\D/g, "");
+  return digits.length > 0 ? digits.slice(-4) : value;
+}
+
+function normalizeParsedTransaction(parsed: unknown): unknown {
+  if (typeof parsed !== "object" || parsed === null || !("cardLastFour" in parsed)) {
+    return parsed;
+  }
+  return {
+    ...parsed,
+    cardLastFour: normalizeCardLastFour((parsed as { cardLastFour: unknown }).cardLastFour),
+  };
+}
+
 export function parseTransaction(responseText: string): TransactionValidationResult {
   let parsedJson: unknown;
   try {
@@ -54,7 +74,7 @@ export function parseTransaction(responseText: string): TransactionValidationRes
     };
   }
 
-  const result = TransactionSchema.safeParse(parsedJson);
+  const result = TransactionSchema.safeParse(normalizeParsedTransaction(parsedJson));
   if (!result.success) {
     const errors = result.error.issues.map(
       (issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`,
