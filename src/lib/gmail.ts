@@ -82,13 +82,42 @@ export async function fetchRecentMessages(
   accessToken: string,
   count = 20,
 ): Promise<GmailMessageSummary[]> {
-  const query = encodeURIComponent(buildBankSenderQuery(SUPPORTED_BANK_SENDERS));
-  const list = (await gmailFetch(
-    `/messages?maxResults=${count}&q=${query}`,
-    accessToken,
-  )) as {
+  const rawQuery = buildBankSenderQuery(SUPPORTED_BANK_SENDERS);
+  const query = encodeURIComponent(rawQuery);
+  const path = `/messages?maxResults=${count}&q=${query}`;
+
+  // TEMPORARY diagnostic logging for the DBS-missing-results investigation.
+  // Remove once root-caused.
+  console.log("[gmail-search-debug] raw (decoded) q:", rawQuery);
+  console.log("[gmail-search-debug] full request URL:", `${GMAIL_API_BASE}${path}`);
+
+  const list = (await gmailFetch(path, accessToken)) as {
     messages?: { id: string }[];
+    resultSizeEstimate?: number;
   };
+
+  console.log(
+    "[gmail-search-debug] combined query -- resultSizeEstimate:",
+    list.resultSizeEstimate,
+    "messages returned:",
+    list.messages?.length ?? 0,
+  );
+
+  // Isolation check: run the DBS sender alone (diagnostic only -- does not
+  // affect what's returned to the page) to see whether the OR-combination
+  // itself is the problem, or DBS specifically returns nothing even alone.
+  const dbsOnlyQuery = encodeURIComponent("from:ibanking.alert@dbs.com");
+  const dbsOnly = (await gmailFetch(
+    `/messages?maxResults=${count}&q=${dbsOnlyQuery}`,
+    accessToken,
+  )) as { messages?: { id: string }[]; resultSizeEstimate?: number };
+  console.log(
+    "[gmail-search-debug] DBS-only query -- resultSizeEstimate:",
+    dbsOnly.resultSizeEstimate,
+    "messages returned:",
+    dbsOnly.messages?.length ?? 0,
+  );
+
   const ids = list.messages ?? [];
 
   const messages = await Promise.all(
