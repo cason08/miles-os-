@@ -5,12 +5,18 @@ import {
   LineChart,
   Mail,
   Plane,
+  TrendingUp,
   Wallet,
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { getTransactions } from "@/lib/transactions";
 import { getSpentThisMonth } from "@/lib/spent-this-month";
 import { getAvailableCash, getNetWorth, getNetWorthBreakdown } from "@/lib/accounts";
+import {
+  getCommitmentsWithStatus,
+  getProjectedAvailableCash,
+  type CommitmentStatus,
+} from "@/lib/commitments";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ConnectGmailButton } from "@/components/connect-gmail-button";
 import { Card } from "@/components/ui/card";
@@ -23,6 +29,7 @@ import { InsightCard } from "@/components/ui/insight-card";
 import { Collapsible } from "@/components/ui/collapsible";
 import { BalanceGroupRow, type BalanceGroupAccent } from "@/components/ui/balance-group-row";
 import { CreditCardSummaryRow } from "@/components/ui/credit-card-summary-row";
+import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 
 // Placeholder data only — Budgets and the Credit Card/Rewards miles
 // summaries aren't backed by real data yet (still need Budget/Rewards
@@ -38,6 +45,17 @@ const BALANCE_GROUP_ACCENTS: Record<string, BalanceGroupAccent> = {
   "Available Cash": "assets",
   Investments: "assets",
   "Credit Cards": "liabilities",
+};
+
+const COMMITMENT_STATUS_LABEL: Record<CommitmentStatus, string> = {
+  paid: "Paid",
+  pending: "Pending",
+  overdue: "Overdue",
+};
+const COMMITMENT_STATUS_VARIANT: Record<CommitmentStatus, StatusBadgeVariant> = {
+  paid: "success",
+  pending: "neutral",
+  overdue: "error",
 };
 
 const BUDGET_CATEGORIES = [
@@ -106,6 +124,11 @@ export default async function HomePage() {
   const availableCash = await getAvailableCash();
   const netWorth = await getNetWorth();
   const netWorthBreakdown = await getNetWorthBreakdown();
+  const projectedAvailableCash = await getProjectedAvailableCash();
+  const commitmentsWithStatus = await getCommitmentsWithStatus();
+  const remainingCommitments = commitmentsWithStatus.filter(
+    (commitment) => commitment.status !== "paid",
+  );
   // Sign before the currency symbol (e.g. "-S$1,500.00") -- toLocaleString
   // alone would put it after ("S$-1,500.00"), which reads wrong. Needed
   // now that the Credit Cards breakdown section is a negative total.
@@ -211,6 +234,40 @@ export default async function HomePage() {
                 icon={Landmark}
                 accent="assets"
               />
+              <MetricCard
+                label="Projected Available Cash"
+                value={formatSgd(projectedAvailableCash)}
+                icon={TrendingUp}
+              >
+                <Collapsible label="View Details">
+                  {remainingCommitments.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Every commitment is accounted for this month.
+                    </p>
+                  ) : (
+                    <div className="flex flex-col divide-y divide-border/50">
+                      {remainingCommitments.map((commitment) => (
+                        <div
+                          key={commitment.id}
+                          className="flex items-center justify-between gap-3 py-1.5 text-sm"
+                        >
+                          <span className="truncate text-muted-foreground">
+                            {commitment.name}
+                          </span>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <StatusBadge variant={COMMITMENT_STATUS_VARIANT[commitment.status]}>
+                              {COMMITMENT_STATUS_LABEL[commitment.status]}
+                            </StatusBadge>
+                            <span className="tabular-nums text-muted-foreground">
+                              {formatSgd(commitment.expectedAmount)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Collapsible>
+              </MetricCard>
               <MetricCard label="Spent This Month" value={formatSgd(spentThisMonth)} icon={Wallet} />
             </div>
 

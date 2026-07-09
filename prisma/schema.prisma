@@ -64,5 +64,32 @@ model Account {
   // row or breaking any future Transaction linkage.
   isActive Boolean @default(true)
 
+  // Matching signal for MonthlyCommitment (and future Card Optimiser work)
+  // -- only meaningful for credit_card-type accounts, null otherwise.
+  cardLastFour String?
+
+  createdAt DateTime @default(now())
+
+  monthlyCommitments MonthlyCommitment[]
+}
+
+model MonthlyCommitment {
+  id   String @id @default(cuid())
+  name String
+  // "insurance" | "loan" | "installment" | "utility" | "mobile_plan" |
+  // "streaming" | "software" | "mortgage" -- plain string, app-validated
+  // (zod), not a Prisma enum. Same reasoning as Account.type /
+  // Transaction.bank: a new category is a one-line addition, not a
+  // migration.
+  type String
+
+  expectedAmount     Decimal
+  currency           String
+  expectedDayOfMonth Int
+  dayTolerance       Int @default(3)
+
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id])
+
   createdAt DateTime @default(now())
 }
