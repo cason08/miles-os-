@@ -12,6 +12,7 @@ import {
 import { auth } from "@/lib/auth";
 import { getTransactions } from "@/lib/transactions";
 import { getSpentThisMonth } from "@/lib/spent-this-month";
+import { getAvailableCash, getNetWorth } from "@/lib/accounts";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ConnectGmailButton } from "@/components/connect-gmail-button";
 import { Card } from "@/components/ui/card";
@@ -117,6 +118,10 @@ export default async function HomePage() {
   const greeting = getGreeting(new Date().getHours());
   const recentTransactions = await getTransactions(10);
   const spentThisMonth = await getSpentThisMonth();
+  const availableCash = await getAvailableCash();
+  const netWorth = await getNetWorth();
+  const formatSgd = (n: number) =>
+    `S$${n.toLocaleString("en-SG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -170,10 +175,9 @@ export default async function HomePage() {
               padding="spacious"
               className="gap-4"
               label="Net Worth"
-              value="S$142,918.20"
+              value={formatSgd(netWorth)}
               icon={Wallet}
               accent="primary"
-              trend={{ direction: "up", label: "Up 2.4% from last month" }}
             >
               <Collapsible label="View Breakdown">
                 <div className="flex flex-col divide-y divide-border">
@@ -185,12 +189,13 @@ export default async function HomePage() {
             </MetricCard>
 
             <div className="flex flex-col gap-6">
-              <MetricCard label="Available Cash" value="S$24,650.30" icon={Landmark} accent="assets" />
               <MetricCard
-                label="Spent This Month"
-                value={`S$${spentThisMonth.toLocaleString("en-SG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                icon={Wallet}
+                label="Available Cash"
+                value={formatSgd(availableCash)}
+                icon={Landmark}
+                accent="assets"
               />
+              <MetricCard label="Spent This Month" value={formatSgd(spentThisMonth)} icon={Wallet} />
             </div>
 
             <div className="flex flex-col gap-3">

@@ -34,3 +34,35 @@ model Transaction {
 
   createdAt DateTime @default(now())
 }
+
+model Account {
+  id   String @id @default(cuid())
+  name String
+  // "cash" | "cash_equivalent" | "investment" | "credit_card" -- validated
+  // at the app layer (zod), not a Prisma enum. Same reasoning already
+  // applied to Transaction.bank/transactionKind/direction: a DB enum would
+  // need a migration every time a type is added (CPF, property, liability
+  // are named as future needs) -- a plain string with app-level validation
+  // doesn't.
+  type String
+
+  currentBalance   Decimal
+  currency         String
+  // Tracks specifically when the balance was last changed, not a generic
+  // row-level updatedAt -- set explicitly in the update path, not Prisma's
+  // @updatedAt (which would fire on any field edit, e.g. renaming an
+  // account, and misleadingly look like a balance refresh).
+  balanceUpdatedAt DateTime @default(now())
+
+  // The entire "data-driven inclusion" mechanism: whether an account
+  // counts toward each dashboard aggregate is a data decision made once
+  // per account, never a code decision.
+  includedInAvailableCash Boolean @default(false)
+  includedInNetWorth      Boolean @default(false)
+
+  // Lets an account be hidden (e.g. closed) later without deleting its
+  // row or breaking any future Transaction linkage.
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+}

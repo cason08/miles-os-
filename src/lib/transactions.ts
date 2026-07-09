@@ -27,7 +27,7 @@ function formatAmount(amountNumber: number, currency: string, direction: string)
 // Reproduces the Dashboard V2 placeholder's date convention (Today /
 // Yesterday / N days ago), falling back to a short absolute date beyond
 // that window.
-function formatRelativeDate(date: Date): string {
+export function formatRelativeDate(date: Date): string {
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
