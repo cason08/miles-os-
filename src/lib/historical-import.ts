@@ -11,28 +11,34 @@ import { askClaudeToExtractTransaction } from "@/lib/claude";
 import { parseTransaction } from "@/lib/transaction";
 import { persistTransaction } from "@/lib/persist-transaction";
 
+export type ImportStatus = "imported" | "skipped" | "ignored" | "failed";
 export type ImportFailureStage = "fetch" | "extraction" | "validation" | "persistence" | "other";
 
-export type ImportFailure = {
+export type ImportRecord = {
   gmailMessageId: string;
   subject: string;
   sender: string;
-  stage: ImportFailureStage;
-  message: string;
+  status: ImportStatus;
+  /** Reason (ignored), error message (failed), merchant/amount summary
+   * (imported), or a short note (skipped). */
+  detail: string;
+  /** Only present when status === "failed" -- feeds failureBreakdown. */
+  stage?: ImportFailureStage;
 };
 
 export type ImportSummary = {
   processed: number;
-  /** Or "would be imported" when dryRun is true. */
   imported: number;
   skipped: number;
-  /** failures.length -- always 0 in dry-run mode, nothing is attempted that can fail. */
+  /** Correctly recognized as not a transaction alert -- not a failure. */
+  ignored: number;
+  /** A real error (fetch/extraction/validation/persistence/other). */
   failed: number;
   durationMs: number;
   dryRun: boolean;
-  failures: ImportFailure[];
-  /** Grouped counts for a quick "what kind of failures are these" read,
-   * e.g. { "Validation failure": 5, "Non-transaction email": 3, "Extraction failure": 2 }. */
+  records: ImportRecord[];
+  /** Grouped counts of *failed* records only, by stage, e.g.
+   * { "Extraction failure": 2, "Validation failure": 1 }. */
   failureBreakdown: Record<string, number>;
 };
 
@@ -40,10 +46,9 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-// Best-effort re-parse of Claude's raw response, used only to enrich
-// diagnostics on a validation failure (e.g. to surface the model's own
-// "reasoning" for why an email isn't a transaction). Deliberately separate
-// from -- and not as strict as -- the real parseTransaction() in
+// Best-effort re-parse of Claude's raw response, used only to detect the
+// "not a transaction alert" case for reporting purposes. Deliberately
+// separate from -- and not as strict as -- the real parseTransaction() in
 // transaction.ts, which remains the sole source of truth for pass/fail.
 export function tryParseForDiagnostics(responseText: string): Record<string, unknown> | null {
   try {
@@ -63,20 +68,20 @@ export function tryParseForDiagnostics(responseText: string): Record<string, unk
 }
 
 // The extraction prompt sets every field to null (except "reasoning") when
-// the email isn't a transaction alert at all -- that's a validation failure
-// like any other (bank/amount/etc. don't satisfy the schema), but it's a
-// genuinely different case from a real bug and worth its own category.
-export function classifyValidationFailure(responseText: string, errors: string[]): string {
+// the email isn't a transaction alert at all. Returns the model's own
+// reasoning when that's the case, so the caller can route it to "ignored"
+// rather than "failed" -- this is the pipeline working as intended, not a
+// bug -- otherwise returns null (a genuine schema violation).
+export function getNonTransactionReason(responseText: string): string | null {
   const parsed = tryParseForDiagnostics(responseText);
   if (parsed && parsed.bank == null && typeof parsed.reasoning === "string") {
-    return `Not a transaction email: ${parsed.reasoning}`;
+    return parsed.reasoning;
   }
-  return errors.join("; ");
+  return null;
 }
 
-export function categorize(failure: ImportFailure): string {
-  if (failure.message.startsWith("Not a transaction email:")) return "Non-transaction email";
-  return `${failure.stage[0].toUpperCase()}${failure.stage.slice(1)} failure`;
+function stageLabel(stage: ImportFailureStage): string {
+  return `${stage[0].toUpperCase()}${stage.slice(1)} failure`;
 }
 
 export async function runHistoricalImport(
@@ -89,20 +94,34 @@ export async function runHistoricalImport(
 
   const messageIds = await fetchMessageIdsSince(accessToken, SUPPORTED_BANK_SENDERS, since);
 
-  let imported = 0;
-  let skipped = 0;
-  const failures: ImportFailure[] = [];
+  const records: ImportRecord[] = [];
 
   for (const id of messageIds) {
     try {
+      // Skip-check happens before any Gmail fetch, which is what keeps
+      // reruns cheap -- fetching metadata just to show subject/sender for
+      // rows we're intentionally not processing would reintroduce a Gmail
+      // API call per already-imported email on every rerun.
       const existing = await prisma.transaction.findUnique({ where: { gmailMessageId: id } });
       if (existing) {
-        skipped++;
+        records.push({
+          gmailMessageId: id,
+          subject: "(not fetched)",
+          sender: "(not fetched)",
+          status: "skipped",
+          detail: "Already imported",
+        });
         continue;
       }
 
       if (dryRun) {
-        imported++;
+        records.push({
+          gmailMessageId: id,
+          subject: "(not fetched)",
+          sender: "(not fetched)",
+          status: "imported",
+          detail: "Would import (dry run)",
+        });
         continue;
       }
 
@@ -110,12 +129,13 @@ export async function runHistoricalImport(
       try {
         message = await fetchMessageFull(accessToken, id);
       } catch (err) {
-        failures.push({
+        records.push({
           gmailMessageId: id,
           subject: "(unknown)",
           sender: "(unknown)",
+          status: "failed",
           stage: "fetch",
-          message: errorMessage(err),
+          detail: errorMessage(err),
         });
         continue;
       }
@@ -128,12 +148,13 @@ export async function runHistoricalImport(
       const html = findBodyPart(message.payload, "text/html");
       const emailText = plainText ?? (html ? htmlToReadableText(html) : null);
       if (!emailText) {
-        failures.push({
+        records.push({
           gmailMessageId: id,
           subject,
           sender,
+          status: "failed",
           stage: "extraction",
-          message: "No plain text or HTML body found to extract from.",
+          detail: "No plain text or HTML body found to extract from.",
         });
         continue;
       }
@@ -146,58 +167,88 @@ export async function runHistoricalImport(
       try {
         ({ responseText } = await askClaudeToExtractTransaction(emailText, receivedAtDate));
       } catch (err) {
-        failures.push({
+        records.push({
           gmailMessageId: id,
           subject,
           sender,
+          status: "failed",
           stage: "extraction",
-          message: errorMessage(err),
+          detail: errorMessage(err),
         });
         continue;
       }
 
       const validation = parseTransaction(responseText);
       if (!validation.success) {
-        failures.push({
-          gmailMessageId: id,
-          subject,
-          sender,
-          stage: "validation",
-          message: classifyValidationFailure(responseText, validation.errors),
-        });
+        const nonTransactionReason = getNonTransactionReason(responseText);
+        records.push(
+          nonTransactionReason
+            ? {
+                gmailMessageId: id,
+                subject,
+                sender,
+                status: "ignored",
+                detail: nonTransactionReason,
+              }
+            : {
+                gmailMessageId: id,
+                subject,
+                sender,
+                status: "failed",
+                stage: "validation",
+                detail: validation.errors.join("; "),
+              },
+        );
         continue;
       }
 
       try {
-        await persistTransaction(validation.transaction, {
+        const persisted = await persistTransaction(validation.transaction, {
           messageId: id,
           threadId: message.threadId,
           receivedAtIso: gmailReceivedAtIso,
         });
-        imported++;
-      } catch (err) {
-        failures.push({
+        records.push({
           gmailMessageId: id,
           subject,
           sender,
+          status: "imported",
+          detail: `${persisted.merchant ?? "Unknown merchant"} — ${persisted.currency} ${persisted.amount}`,
+        });
+      } catch (err) {
+        records.push({
+          gmailMessageId: id,
+          subject,
+          sender,
+          status: "failed",
           stage: "persistence",
-          message: errorMessage(err),
+          detail: errorMessage(err),
         });
       }
     } catch (err) {
-      failures.push({
+      records.push({
         gmailMessageId: id,
         subject: "(unknown)",
         sender: "(unknown)",
+        status: "failed",
         stage: "other",
-        message: errorMessage(err),
+        detail: errorMessage(err),
       });
     }
   }
 
+  // Derive every count from `records` rather than tracking counters in
+  // parallel -- one source of truth means the summary numbers and the
+  // detail table can never disagree.
+  const imported = records.filter((r) => r.status === "imported").length;
+  const skipped = records.filter((r) => r.status === "skipped").length;
+  const ignored = records.filter((r) => r.status === "ignored").length;
+  const failed = records.filter((r) => r.status === "failed").length;
+
   const failureBreakdown: Record<string, number> = {};
-  for (const failure of failures) {
-    const key = categorize(failure);
+  for (const record of records) {
+    if (record.status !== "failed" || !record.stage) continue;
+    const key = stageLabel(record.stage);
     failureBreakdown[key] = (failureBreakdown[key] ?? 0) + 1;
   }
 
@@ -205,10 +256,11 @@ export async function runHistoricalImport(
     processed: messageIds.length,
     imported,
     skipped,
-    failed: failures.length,
+    ignored,
+    failed,
     durationMs: Date.now() - startedAt,
     dryRun,
-    failures,
+    records,
     failureBreakdown,
   };
 }

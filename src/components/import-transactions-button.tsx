@@ -44,6 +44,7 @@ export function ImportTransactionsButton() {
               {result.dryRun ? "Would import" : "Imported"}: {result.imported}
             </li>
             <li>Skipped: {result.skipped}</li>
+            <li>Ignored: {result.ignored}</li>
             <li>Failed: {result.failed}</li>
             <li>Duration: {(result.durationMs / 1000).toFixed(1)}s</li>
           </ul>
@@ -59,46 +60,38 @@ export function ImportTransactionsButton() {
                   </li>
                 ))}
               </ul>
-
-              <details>
-                <summary>Show {result.failures.length} failed emails</summary>
-                <table style={{ borderCollapse: "collapse", width: "100%" }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: "left", padding: "4px 8px" }}>Gmail ID</th>
-                      <th style={{ textAlign: "left", padding: "4px 8px" }}>Subject</th>
-                      <th style={{ textAlign: "left", padding: "4px 8px" }}>Sender</th>
-                      <th style={{ textAlign: "left", padding: "4px 8px" }}>Stage</th>
-                      <th style={{ textAlign: "left", padding: "4px 8px" }}>Message</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {result.failures.map((failure) => (
-                      <tr key={failure.gmailMessageId} style={{ borderTop: "1px solid #ccc" }}>
-                        <td style={{ padding: "4px 8px", verticalAlign: "top" }}>
-                          <Link href={`/debug/email/${failure.gmailMessageId}`}>
-                            {failure.gmailMessageId}
-                          </Link>
-                        </td>
-                        <td style={{ padding: "4px 8px", verticalAlign: "top" }}>
-                          {failure.subject}
-                        </td>
-                        <td style={{ padding: "4px 8px", verticalAlign: "top" }}>
-                          {failure.sender}
-                        </td>
-                        <td style={{ padding: "4px 8px", verticalAlign: "top" }}>
-                          {failure.stage}
-                        </td>
-                        <td style={{ padding: "4px 8px", verticalAlign: "top" }}>
-                          {failure.message}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </details>
             </>
           )}
+
+          <details>
+            <summary>Show {result.records.length} processed emails</summary>
+            <table style={{ borderCollapse: "collapse", width: "100%" }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left", padding: "4px 8px" }}>Gmail ID</th>
+                  <th style={{ textAlign: "left", padding: "4px 8px" }}>Subject</th>
+                  <th style={{ textAlign: "left", padding: "4px 8px" }}>Sender</th>
+                  <th style={{ textAlign: "left", padding: "4px 8px" }}>Status</th>
+                  <th style={{ textAlign: "left", padding: "4px 8px" }}>Detail</th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.records.map((record) => (
+                  <tr key={record.gmailMessageId} style={{ borderTop: "1px solid #ccc" }}>
+                    <td style={{ padding: "4px 8px", verticalAlign: "top" }}>
+                      <Link href={`/debug/email/${record.gmailMessageId}`}>
+                        {record.gmailMessageId}
+                      </Link>
+                    </td>
+                    <td style={{ padding: "4px 8px", verticalAlign: "top" }}>{record.subject}</td>
+                    <td style={{ padding: "4px 8px", verticalAlign: "top" }}>{record.sender}</td>
+                    <td style={{ padding: "4px 8px", verticalAlign: "top" }}>{record.status}</td>
+                    <td style={{ padding: "4px 8px", verticalAlign: "top" }}>{record.detail}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
         </>
       )}
     </div>
