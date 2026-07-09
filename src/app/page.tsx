@@ -129,6 +129,10 @@ export default async function HomePage() {
   const remainingCommitments = commitmentsWithStatus.filter(
     (commitment) => commitment.status !== "paid",
   );
+  const totalMonthlyCommitments = remainingCommitments.reduce(
+    (sum, commitment) => sum + commitment.expectedAmount,
+    0,
+  );
   // Sign before the currency symbol (e.g. "-S$1,500.00") -- toLocaleString
   // alone would put it after ("S$-1,500.00"), which reads wrong. Needed
   // now that the Credit Cards breakdown section is a negative total.
@@ -245,25 +249,33 @@ export default async function HomePage() {
                       Every commitment is accounted for this month.
                     </p>
                   ) : (
-                    <div className="flex flex-col divide-y divide-border/50">
-                      {remainingCommitments.map((commitment) => (
-                        <div
-                          key={commitment.id}
-                          className="flex items-center justify-between gap-3 py-1.5 text-sm"
-                        >
-                          <span className="truncate text-muted-foreground">
-                            {commitment.name}
-                          </span>
-                          <div className="flex shrink-0 items-center gap-2">
-                            <StatusBadge variant={COMMITMENT_STATUS_VARIANT[commitment.status]}>
-                              {COMMITMENT_STATUS_LABEL[commitment.status]}
-                            </StatusBadge>
-                            <span className="tabular-nums text-muted-foreground">
-                              {formatSgd(commitment.expectedAmount)}
+                    <div className="flex flex-col">
+                      <div className="flex flex-col divide-y divide-border/50">
+                        {remainingCommitments.map((commitment) => (
+                          <div
+                            key={commitment.id}
+                            className="flex items-center justify-between gap-3 py-1.5 text-sm"
+                          >
+                            <span className="truncate text-muted-foreground">
+                              {commitment.name}
                             </span>
+                            <div className="flex shrink-0 items-center gap-2">
+                              <StatusBadge variant={COMMITMENT_STATUS_VARIANT[commitment.status]}>
+                                {COMMITMENT_STATUS_LABEL[commitment.status]}
+                              </StatusBadge>
+                              <span className="tabular-nums text-muted-foreground">
+                                {formatSgd(commitment.expectedAmount)}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                      <div className="mt-1 flex items-center justify-between border-t border-border pt-2 text-sm">
+                        <span className="font-semibold">Total Monthly Commitments</span>
+                        <span className="font-semibold tabular-nums">
+                          {formatSgd(totalMonthlyCommitments)}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </Collapsible>
