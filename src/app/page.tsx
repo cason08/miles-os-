@@ -18,6 +18,8 @@ import {
   type CommitmentStatus,
 } from "@/lib/commitments";
 import { getLastSyncedAt } from "@/lib/daily-sync";
+import { getCategories } from "@/lib/categories";
+import { getCategoryBudgetStatuses } from "@/lib/budgets";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ConnectGmailButton } from "@/components/connect-gmail-button";
 import { SyncGmailControl } from "@/components/sync-gmail-control";
@@ -33,11 +35,10 @@ import { BalanceGroupRow, type BalanceGroupAccent } from "@/components/ui/balanc
 import { CreditCardSummaryRow } from "@/components/ui/credit-card-summary-row";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 
-// Placeholder data only — Budgets and the Credit Card/Rewards miles
-// summaries aren't backed by real data yet (still need Budget/Rewards
-// models). Net Worth's breakdown is real (Account model); Recent
-// Transactions is real (Transaction Persistence) -- neither is part of
-// this placeholder set.
+// Placeholder data only — the Credit Card/Rewards miles summaries aren't
+// backed by real data yet (still need a Rewards model). Everything else on
+// this page (Net Worth breakdown, Recent Transactions, Commitments, Budgets)
+// is real.
 const BALANCE_GROUP_ICONS: Record<string, typeof Landmark> = {
   "Available Cash": Landmark,
   Investments: LineChart,
@@ -59,13 +60,6 @@ const COMMITMENT_STATUS_VARIANT: Record<CommitmentStatus, StatusBadgeVariant> = 
   pending: "neutral",
   overdue: "error",
 };
-
-const BUDGET_CATEGORIES = [
-  { category: "Food", spent: "S$612", limit: "S$700", percent: 87, status: "warning" as const },
-  { category: "Transport", spent: "S$186", limit: "S$300", percent: 62, status: "on-track" as const },
-  { category: "Shopping", spent: "S$524", limit: "S$500", percent: 105, status: "exceeded" as const },
-  { category: "Life & Entertainment", spent: "S$340", limit: "S$450", percent: 76, status: "on-track" as const },
-];
 
 const CREDIT_CARDS = [
   {
@@ -133,6 +127,7 @@ export default async function HomePage() {
   const firstName = (session.user.name ?? session.user.email ?? "there").split(" ")[0];
   const greeting = getGreeting(new Date().getHours());
   const recentTransactions = await getTransactions(10);
+  const categories = await getCategories();
   const spentThisMonth = await getSpentThisMonth();
   const availableCash = await getAvailableCash();
   const netWorth = await getNetWorth();
@@ -147,6 +142,11 @@ export default async function HomePage() {
     0,
   );
   const lastSyncedAt = await getLastSyncedAt();
+  const budgetStatuses = await getCategoryBudgetStatuses();
+  const totalBudget = budgetStatuses.reduce((sum, b) => sum + b.budget, 0);
+  const totalBudgetSpent = budgetStatuses.reduce((sum, b) => sum + b.spent, 0);
+  const overallBudgetPercent = totalBudget > 0 ? (totalBudgetSpent / totalBudget) * 100 : 0;
+  const budgetRemaining = totalBudget - totalBudgetSpent;
   // Sign before the currency symbol (e.g. "-S$1,500.00") -- toLocaleString
   // alone would put it after ("S$-1,500.00"), which reads wrong. Needed
   // now that the Credit Cards breakdown section is a negative total.
@@ -310,25 +310,48 @@ export default async function HomePage() {
 
           {/* This Month */}
           <div className="flex flex-col gap-6">
-            <SectionHeader title="This Month" actionLabel="See all" actionHref="/budgets" />
+            <SectionHeader title="This Month" actionLabel="See all" actionHref="/categories" />
 
-            <Card className="gap-3">
-              <span className="text-sm text-muted-foreground">Budget health, overall</span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-semibold tabular-nums">71%</span>
-                <span className="text-sm text-muted-foreground">of monthly budget used</span>
-              </div>
-              <ProgressBar value={70.7} />
-              <span className="text-xs tabular-nums text-muted-foreground">
-                S$3,180 of S$4,500 · S$1,320 left
-              </span>
-            </Card>
+            {budgetStatuses.length === 0 ? (
+              <Card>
+                <p className="text-sm text-muted-foreground">
+                  No budgets set yet — visit Categories to set a monthly budget and track spend
+                  against it here.
+                </p>
+              </Card>
+            ) : (
+              <>
+                <Card className="gap-3">
+                  <span className="text-sm text-muted-foreground">Budget health, overall</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-semibold tabular-nums">
+                      {Math.round(overallBudgetPercent)}%
+                    </span>
+                    <span className="text-sm text-muted-foreground">of monthly budget used</span>
+                  </div>
+                  <ProgressBar value={overallBudgetPercent} />
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {formatSgd(totalBudgetSpent)} of {formatSgd(totalBudget)} ·{" "}
+                    {budgetRemaining >= 0
+                      ? `${formatSgd(budgetRemaining)} left`
+                      : `${formatSgd(Math.abs(budgetRemaining))} over`}
+                  </span>
+                </Card>
 
-            <div className="flex flex-col gap-4">
-              {BUDGET_CATEGORIES.map((budget) => (
-                <BudgetCard key={budget.category} {...budget} />
-              ))}
-            </div>
+                <div className="flex flex-col gap-4">
+                  {budgetStatuses.map((budget) => (
+                    <BudgetCard
+                      key={budget.id}
+                      category={budget.name}
+                      spent={formatSgd(budget.spent)}
+                      limit={formatSgd(budget.budget)}
+                      percent={budget.percent}
+                      status={budget.status}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Credit Cards */}
@@ -356,7 +379,7 @@ export default async function HomePage() {
 
         <section className="flex flex-col gap-4">
           <SectionHeader title="Recent Transactions" actionLabel="See all" actionHref="/transactions" />
-          <TransactionList transactions={recentTransactions} />
+          <TransactionList transactions={recentTransactions} categories={categories} />
         </section>
       </main>
     </div>

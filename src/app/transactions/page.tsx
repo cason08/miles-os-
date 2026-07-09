@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { getTransactions } from "@/lib/transactions";
+import { getCategories } from "@/lib/categories";
 import { TransactionList } from "@/components/transaction-list";
 
 export default async function TransactionsPage() {
@@ -14,7 +15,7 @@ export default async function TransactionsPage() {
     redirect("/api/auth/signin");
   }
 
-  const transactions = await getTransactions();
+  const [transactions, categories] = await Promise.all([getTransactions(), getCategories()]);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -28,7 +29,7 @@ export default async function TransactionsPage() {
           </Link>
         </div>
 
-        <TransactionList transactions={transactions} />
+        <TransactionList transactions={transactions} categories={categories} />
       </main>
     </div>
   );

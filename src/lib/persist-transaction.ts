@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import type { Transaction } from "@/lib/transaction";
+import { matchCategoryForMerchant } from "@/lib/merchant-rules";
 
 export type PersistedTransaction = {
   id: string;
@@ -23,6 +24,13 @@ export async function persistTransaction(
 ): Promise<PersistedTransaction> {
   const gmailReceivedAt = gmail.receivedAtIso ? new Date(gmail.receivedAtIso) : new Date();
 
+  // Only ever runs for a genuinely new transaction (the `create` branch
+  // below) -- an already-persisted row is never touched, so this can never
+  // override a manual categorisation. categorySource is only set alongside
+  // a match, so an unmatched transaction stays fully uncategorized, same as
+  // before this existed.
+  const matchedCategoryId = await matchCategoryForMerchant(transaction.merchant);
+
   // Upsert on the unique gmailMessageId with an empty update: re-extracting
   // an already-persisted email is a no-op that returns the existing row,
   // rather than erroring on the unique constraint or creating a duplicate.
@@ -41,6 +49,8 @@ export async function persistTransaction(
       direction: transaction.direction,
       cardLastFour: transaction.cardLastFour,
       transactionDate: new Date(transaction.date),
+      categoryId: matchedCategoryId,
+      categorySource: matchedCategoryId ? "rule" : null,
     },
     update: {},
   });

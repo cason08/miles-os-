@@ -3,7 +3,9 @@ import { prisma } from "@/lib/db";
 export type TransactionRowData = {
   id: string;
   merchant: string;
-  category: string;
+  categoryId: string | null;
+  categoryName: string | null;
+  categoryColor: string | null;
   account: string;
   amount: string;
   date: string;
@@ -47,6 +49,7 @@ function formatAccount(bank: string, cardLastFour: string | null): string {
 
 export async function getTransactions(limit?: number): Promise<TransactionRowData[]> {
   const rows = await prisma.transaction.findMany({
+    include: { category: true },
     orderBy: [{ transactionDate: "desc" }, { createdAt: "desc" }],
     ...(limit !== undefined ? { take: limit } : {}),
   });
@@ -54,13 +57,27 @@ export async function getTransactions(limit?: number): Promise<TransactionRowDat
   return rows.map((row) => ({
     id: row.id,
     merchant: row.merchant ?? "Unknown merchant",
-    // transactionKind (purchase/refund/transfer/...) is a different concept
-    // from a spending category -- displaying it as one would be misleading.
-    // Stays "Uncategorized" until real categorization exists.
-    category: "Uncategorized",
+    categoryId: row.categoryId,
+    categoryName: row.category?.name ?? null,
+    categoryColor: row.category?.color ?? null,
     account: formatAccount(row.bank, row.cardLastFour),
     amount: formatAmount(row.amount.toNumber(), row.currency, row.direction),
     date: formatRelativeDate(row.transactionDate),
     source: "imported" as const,
   }));
+}
+
+// Sets categorySource to "manual" whenever a category is assigned this way
+// -- never null it out silently -- so a future rule re-run or AI
+// categorisation can recognize and skip transactions the user categorised
+// by hand. Clearing back to Uncategorized (categoryId: null) also clears
+// categorySource, since there's no source for an unset category.
+export async function setTransactionCategory(
+  transactionId: string,
+  categoryId: string | null,
+): Promise<void> {
+  await prisma.transaction.update({
+    where: { id: transactionId },
+    data: { categoryId, categorySource: categoryId ? "manual" : null },
+  });
 }

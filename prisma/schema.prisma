@@ -33,6 +33,18 @@ model Transaction {
   transactionDate DateTime @db.Date
 
   createdAt DateTime @default(now())
+
+  categoryId String?
+  // SetNull, not the Restrict default -- deleting a category must never
+  // delete or block deletion of transaction history; it just falls back
+  // to uncategorized.
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  // "manual" | "rule" (-> "ai" once AI categorisation ships). Plain
+  // string, same reasoning as bank/transactionKind/direction. Set
+  // whenever categoryId is set, null otherwise -- exists so a future rule
+  // re-run (or AI categorisation) never silently overwrites a
+  // categorisation the user chose by hand.
+  categorySource String?
 }
 
 model Account {
@@ -112,4 +124,43 @@ model AppState {
   // and re-sending them to Claude on every run until an unrelated real
   // transaction happened to move the checkpoint forward.
   lastProcessedGmailReceivedAt DateTime?
+}
+
+model Category {
+  id   String @id @default(cuid())
+  name String
+  // Implicitly monthly for v1 -- a future budgetPeriod column (defaulting
+  // existing rows to "monthly") would generalize cadence later without a
+  // redesign of this one.
+  budget   Decimal?
+  currency String
+  // Hex string (e.g. "#4F46E5"), not a fixed token palette -- stays
+  // flexible as the category list grows; read once here and reused
+  // consistently across dashboard cards, budget cards, and charts instead
+  // of each component guessing its own color.
+  color String?
+  // Archive, not delete -- a category with historical transactions
+  // attached shouldn't disappear from past data when retired.
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  transactions Transaction[]
+  rules        MerchantRule[]
+}
+
+model MerchantRule {
+  id String @id @default(cuid())
+
+  categoryId String
+  // Cascade -- a rule is meaningless without its category, so it goes
+  // away with it rather than becoming an orphan or blocking deletion.
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  // v1: one matching signal, case-insensitive merchant substring. Future
+  // rule types (MCC, keywords, bank-specific) are new columns or a new
+  // rule-type table -- not a redesign of this one.
+  merchantPattern String
+
+  createdAt DateTime @default(now())
 }
