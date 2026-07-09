@@ -4,15 +4,13 @@ import {
   Landmark,
   LineChart,
   Mail,
-  Package,
   Plane,
-  ShieldCheck,
   Wallet,
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { getTransactions } from "@/lib/transactions";
 import { getSpentThisMonth } from "@/lib/spent-this-month";
-import { getAvailableCash, getNetWorth } from "@/lib/accounts";
+import { getAvailableCash, getNetWorth, getNetWorthBreakdown } from "@/lib/accounts";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ConnectGmailButton } from "@/components/connect-gmail-button";
 import { Card } from "@/components/ui/card";
@@ -26,34 +24,21 @@ import { Collapsible } from "@/components/ui/collapsible";
 import { BalanceGroupRow, type BalanceGroupAccent } from "@/components/ui/balance-group-row";
 import { CreditCardSummaryRow } from "@/components/ui/credit-card-summary-row";
 
-// Placeholder data only — Net Worth, Budgets, and the Credit Card/Rewards
-// summaries aren't backed by real data yet (still need Account/Budget/
-// Rewards models). Figures are fabricated but internally consistent (e.g.
-// the two cards' outstanding balances sum to the "Credit cards" line in
-// the Net Worth breakdown) so the layout can be judged against a realistic
-// content shape. Recent Transactions below is real (Transaction Persistence
-// is done) and no longer part of this placeholder set.
-const BALANCE_GROUPS: {
-  icon: typeof Landmark;
-  accent: BalanceGroupAccent;
-  label: string;
-  meta: string;
-  amount: string;
-  preview?: boolean;
-}[] = [
-  { icon: Landmark, accent: "assets", label: "Cash accounts", meta: "3 accounts", amount: "S$24,650.30" },
-  {
-    icon: LineChart,
-    accent: "assets",
-    label: "Investment accounts",
-    meta: "Mari Invest · 1 account",
-    amount: "S$8,500.00",
-    preview: true,
-  },
-  { icon: ShieldCheck, accent: "assets", label: "CPF", meta: "OA · SA · MA", amount: "S$112,648.35", preview: true },
-  { icon: CreditCard, accent: "liabilities", label: "Credit cards", meta: "2 cards", amount: "-S$3,180.45" },
-  { icon: Package, accent: "assets", label: "Other assets", meta: "1 item", amount: "S$300.00", preview: true },
-];
+// Placeholder data only — Budgets and the Credit Card/Rewards miles
+// summaries aren't backed by real data yet (still need Budget/Rewards
+// models). Net Worth's breakdown is real (Account model); Recent
+// Transactions is real (Transaction Persistence) -- neither is part of
+// this placeholder set.
+const BALANCE_GROUP_ICONS: Record<string, typeof Landmark> = {
+  "Available Cash": Landmark,
+  Investments: LineChart,
+  "Credit Cards": CreditCard,
+};
+const BALANCE_GROUP_ACCENTS: Record<string, BalanceGroupAccent> = {
+  "Available Cash": "assets",
+  Investments: "assets",
+  "Credit Cards": "liabilities",
+};
 
 const BUDGET_CATEGORIES = [
   { category: "Food", spent: "S$612", limit: "S$700", percent: 87, status: "warning" as const },
@@ -120,8 +105,18 @@ export default async function HomePage() {
   const spentThisMonth = await getSpentThisMonth();
   const availableCash = await getAvailableCash();
   const netWorth = await getNetWorth();
-  const formatSgd = (n: number) =>
-    `S$${n.toLocaleString("en-SG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const netWorthBreakdown = await getNetWorthBreakdown();
+  // Sign before the currency symbol (e.g. "-S$1,500.00") -- toLocaleString
+  // alone would put it after ("S$-1,500.00"), which reads wrong. Needed
+  // now that the Credit Cards breakdown section is a negative total.
+  const formatSgd = (n: number) => {
+    const sign = n < 0 ? "-" : "";
+    const value = Math.abs(n).toLocaleString("en-SG", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    return `${sign}S$${value}`;
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -180,9 +175,30 @@ export default async function HomePage() {
               accent="primary"
             >
               <Collapsible label="View Breakdown">
-                <div className="flex flex-col divide-y divide-border">
-                  {BALANCE_GROUPS.map((group) => (
-                    <BalanceGroupRow key={group.label} {...group} />
+                <div className="flex flex-col gap-4">
+                  {netWorthBreakdown.map((group) => (
+                    <div key={group.label} className="flex flex-col">
+                      <BalanceGroupRow
+                        icon={BALANCE_GROUP_ICONS[group.label] ?? Landmark}
+                        accent={BALANCE_GROUP_ACCENTS[group.label] ?? "assets"}
+                        label={group.label}
+                        meta={`${group.accounts.length} account${group.accounts.length === 1 ? "" : "s"}`}
+                        amount={formatSgd(group.total)}
+                      />
+                      <div className="flex flex-col divide-y divide-border/50 pl-10">
+                        {group.accounts.map((account) => (
+                          <div
+                            key={account.id}
+                            className="flex items-center justify-between py-1.5 text-sm"
+                          >
+                            <span className="truncate text-muted-foreground">{account.name}</span>
+                            <span className="shrink-0 tabular-nums text-muted-foreground">
+                              {formatSgd(account.balance)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </Collapsible>
