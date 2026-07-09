@@ -67,14 +67,18 @@ export function tryParseForDiagnostics(responseText: string): Record<string, unk
   }
 }
 
-// The extraction prompt sets every field to null (except "reasoning") when
-// the email isn't a transaction alert at all. Returns the model's own
-// reasoning when that's the case, so the caller can route it to "ignored"
-// rather than "failed" -- this is the pipeline working as intended, not a
-// bug -- otherwise returns null (a genuine schema violation).
+// The extraction prompt sets every transaction-specific field to null
+// (except "reasoning") when the email isn't a financial transaction --
+// Claude still often knows which bank sent the email even then, so "bank"
+// alone isn't a reliable signal, but "amount" is: TransactionSchema
+// requires it to be a positive number for any real transaction, so a null
+// amount can only mean the non-transaction branch was taken. Returns the
+// model's own reasoning when that's the case, so the caller can route it
+// to "ignored" rather than "failed" -- this is the pipeline working as
+// intended, not a bug -- otherwise returns null (a genuine schema violation).
 export function getNonTransactionReason(responseText: string): string | null {
   const parsed = tryParseForDiagnostics(responseText);
-  if (parsed && parsed.bank == null && typeof parsed.reasoning === "string") {
+  if (parsed && parsed.amount == null && typeof parsed.reasoning === "string") {
     return parsed.reasoning;
   }
   return null;
