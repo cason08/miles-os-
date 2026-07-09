@@ -7,9 +7,15 @@ export type ExtractResult =
   | { prompt: string; responseText: string; validation: TransactionValidationResult }
   | { error: string };
 
-export async function extractTransaction(emailText: string): Promise<ExtractResult> {
+export async function extractTransaction(
+  emailText: string,
+  receivedAtDate: string | null,
+): Promise<ExtractResult> {
   try {
-    const { prompt, responseText } = await askClaudeToExtractTransaction(emailText);
+    const { prompt, responseText } = await askClaudeToExtractTransaction(
+      emailText,
+      receivedAtDate,
+    );
     const validation = parseTransaction(responseText);
     return { prompt, responseText, validation };
   } catch (err) {
