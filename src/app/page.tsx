@@ -10,6 +10,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { auth } from "@/lib/auth";
+import { getRecentTransactionRows } from "@/lib/recent-transactions";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ConnectGmailButton } from "@/components/connect-gmail-button";
 import { Card } from "@/components/ui/card";
@@ -23,11 +24,13 @@ import { Collapsible } from "@/components/ui/collapsible";
 import { BalanceGroupRow, type BalanceGroupAccent } from "@/components/ui/balance-group-row";
 import { CreditCardSummaryRow } from "@/components/ui/credit-card-summary-row";
 
-// Placeholder data only — Transaction Persistence is being built in a
-// separate session (ROADMAP.md M3-M8). Figures are fabricated but
-// internally consistent (e.g. the two cards' outstanding balances sum to
-// the "Credit cards" line in the Net Worth breakdown) so the layout can be
-// judged against a realistic content shape.
+// Placeholder data only — Net Worth, Budgets, and the Credit Card/Rewards
+// summaries aren't backed by real data yet (still need Account/Budget/
+// Rewards models). Figures are fabricated but internally consistent (e.g.
+// the two cards' outstanding balances sum to the "Credit cards" line in
+// the Net Worth breakdown) so the layout can be judged against a realistic
+// content shape. Recent Transactions below is real (Transaction Persistence
+// is done) and no longer part of this placeholder set.
 const BALANCE_GROUPS: {
   icon: typeof Landmark;
   accent: BalanceGroupAccent;
@@ -92,73 +95,6 @@ const INSIGHTS = [
   },
 ];
 
-const RECENT_TRANSACTIONS = [
-  {
-    merchant: "Grab",
-    category: "Transport",
-    account: "UOB Preferred Platinum",
-    amount: "-S$18.40",
-    date: "Today",
-    source: "imported" as const,
-  },
-  {
-    merchant: "NTUC FairPrice",
-    category: "Groceries",
-    account: "OCBC 365 Account",
-    amount: "-S$86.20",
-    date: "Yesterday",
-    source: "imported" as const,
-  },
-  {
-    merchant: "Netflix",
-    category: "Subscriptions",
-    account: "DBS Woman's World",
-    amount: "-S$16.98",
-    date: "2 days ago",
-    source: "imported" as const,
-  },
-  {
-    merchant: "Din Tai Fung",
-    category: "Dining",
-    account: "Citi Rewards",
-    amount: "-S$64.50",
-    date: "3 days ago",
-    source: "imported" as const,
-  },
-  {
-    merchant: "Shopee",
-    category: "Shopping",
-    account: "DBS Altitude",
-    amount: "-S$142.00",
-    date: "4 days ago",
-    source: "manual" as const,
-  },
-  {
-    merchant: "Salary — Acme Corp",
-    category: "Income",
-    account: "OCBC 365 Account",
-    amount: "+S$6,200.00",
-    date: "5 days ago",
-    source: "imported" as const,
-  },
-  {
-    merchant: "SP Group",
-    category: "Utilities",
-    account: "OCBC 365 Account",
-    amount: "-S$112.60",
-    date: "6 days ago",
-    source: "imported" as const,
-  },
-  {
-    merchant: "Ya Kun Kaya Toast",
-    category: "Dining",
-    account: "UOB Preferred Platinum",
-    amount: "-S$9.80",
-    date: "6 days ago",
-    source: "imported" as const,
-  },
-];
-
 function getGreeting(hour: number) {
   if (hour < 12) return "Good morning";
   if (hour < 18) return "Good afternoon";
@@ -178,6 +114,7 @@ export default async function HomePage() {
 
   const firstName = (session.user.name ?? session.user.email ?? "there").split(" ")[0];
   const greeting = getGreeting(new Date().getHours());
+  const recentTransactions = await getRecentTransactionRows();
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -305,11 +242,20 @@ export default async function HomePage() {
 
         <section className="flex flex-col gap-4">
           <SectionHeader title="Recent Transactions" actionLabel="See all" actionHref="/transactions" />
-          <Card className="gap-0 divide-y divide-border p-0">
-            {RECENT_TRANSACTIONS.map((transaction) => (
-              <TransactionRow key={`${transaction.merchant}-${transaction.date}`} {...transaction} />
-            ))}
-          </Card>
+          {recentTransactions.length === 0 ? (
+            <Card>
+              <p className="text-sm text-muted-foreground">
+                No transactions yet — once Gmail sync captures a bank email, it&apos;ll show up
+                here.
+              </p>
+            </Card>
+          ) : (
+            <Card className="gap-0 divide-y divide-border p-0">
+              {recentTransactions.map((transaction) => (
+                <TransactionRow key={transaction.id} {...transaction} />
+              ))}
+            </Card>
+          )}
         </section>
       </main>
     </div>
