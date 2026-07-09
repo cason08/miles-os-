@@ -90,6 +90,7 @@ export const SUPPORTED_BANK_SENDERS = [
   "ibanking.alert@dbs.com",
   "alerts@citibank.com.sg",
   "noreply@notify.ocbc.com",
+  "Notifications@ocbc.com",
   "unialerts@uobgroup.com",
 ] as const;
 
