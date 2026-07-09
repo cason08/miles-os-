@@ -98,6 +98,33 @@ export function buildBankSenderQuery(senders: readonly string[]): string {
   return senders.map((sender) => `from:${sender}`).join(" OR ");
 }
 
+// Enumerates every matching message ID since `since`, paginating through
+// Gmail's messages.list until there's no nextPageToken. The sender OR-group
+// must be parenthesized before combining with `after:` -- otherwise Gmail's
+// query precedence binds the date filter to only the last sender, silently
+// under-restricting the others.
+export async function fetchMessageIdsSince(
+  accessToken: string,
+  senders: readonly string[],
+  since: Date,
+): Promise<string[]> {
+  const afterDate = since.toISOString().slice(0, 10).replaceAll("-", "/");
+  const query = encodeURIComponent(`(${buildBankSenderQuery(senders)}) after:${afterDate}`);
+
+  const ids: string[] = [];
+  let pageToken: string | undefined;
+  do {
+    const page = (await gmailFetch(
+      `/messages?maxResults=100&q=${query}${pageToken ? `&pageToken=${pageToken}` : ""}`,
+      accessToken,
+    )) as { messages?: { id: string }[]; nextPageToken?: string };
+    ids.push(...(page.messages ?? []).map((m) => m.id));
+    pageToken = page.nextPageToken;
+  } while (pageToken);
+
+  return ids;
+}
+
 export async function fetchRecentMessages(
   accessToken: string,
   count = 20,
