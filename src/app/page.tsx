@@ -10,7 +10,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { auth } from "@/lib/auth";
-import { getRecentTransactionRows } from "@/lib/recent-transactions";
+import { getTransactions } from "@/lib/transactions";
 import { getSpentThisMonth } from "@/lib/spent-this-month";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ConnectGmailButton } from "@/components/connect-gmail-button";
@@ -19,7 +19,7 @@ import { MetricCard } from "@/components/ui/metric-card";
 import { SectionHeader } from "@/components/ui/section-header";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { BudgetCard } from "@/components/ui/budget-card";
-import { TransactionRow } from "@/components/ui/transaction-row";
+import { TransactionList } from "@/components/transaction-list";
 import { InsightCard } from "@/components/ui/insight-card";
 import { Collapsible } from "@/components/ui/collapsible";
 import { BalanceGroupRow, type BalanceGroupAccent } from "@/components/ui/balance-group-row";
@@ -115,7 +115,7 @@ export default async function HomePage() {
 
   const firstName = (session.user.name ?? session.user.email ?? "there").split(" ")[0];
   const greeting = getGreeting(new Date().getHours());
-  const recentTransactions = await getRecentTransactionRows();
+  const recentTransactions = await getTransactions(10);
   const spentThisMonth = await getSpentThisMonth();
 
   return (
@@ -248,20 +248,7 @@ export default async function HomePage() {
 
         <section className="flex flex-col gap-4">
           <SectionHeader title="Recent Transactions" actionLabel="See all" actionHref="/transactions" />
-          {recentTransactions.length === 0 ? (
-            <Card>
-              <p className="text-sm text-muted-foreground">
-                No transactions yet — once Gmail sync captures a bank email, it&apos;ll show up
-                here.
-              </p>
-            </Card>
-          ) : (
-            <Card className="gap-0 divide-y divide-border p-0">
-              {recentTransactions.map((transaction) => (
-                <TransactionRow key={transaction.id} {...transaction} />
-              ))}
-            </Card>
-          )}
+          <TransactionList transactions={recentTransactions} />
         </section>
       </main>
     </div>

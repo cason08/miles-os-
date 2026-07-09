@@ -45,10 +45,10 @@ function formatAccount(bank: string, cardLastFour: string | null): string {
   return cardLastFour ? `${bank} •••• ${cardLastFour}` : bank;
 }
 
-export async function getRecentTransactionRows(limit = 10): Promise<TransactionRowData[]> {
+export async function getTransactions(limit?: number): Promise<TransactionRowData[]> {
   const rows = await prisma.transaction.findMany({
     orderBy: [{ transactionDate: "desc" }, { createdAt: "desc" }],
-    take: limit,
+    ...(limit !== undefined ? { take: limit } : {}),
   });
 
   return rows.map((row) => ({
