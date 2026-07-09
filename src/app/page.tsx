@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { getRecentTransactionRows } from "@/lib/recent-transactions";
+import { getSpentThisMonth } from "@/lib/spent-this-month";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ConnectGmailButton } from "@/components/connect-gmail-button";
 import { Card } from "@/components/ui/card";
@@ -115,6 +116,7 @@ export default async function HomePage() {
   const firstName = (session.user.name ?? session.user.email ?? "there").split(" ")[0];
   const greeting = getGreeting(new Date().getHours());
   const recentTransactions = await getRecentTransactionRows();
+  const spentThisMonth = await getSpentThisMonth();
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -184,7 +186,11 @@ export default async function HomePage() {
 
             <div className="flex flex-col gap-6">
               <MetricCard label="Available Cash" value="S$24,650.30" icon={Landmark} accent="assets" />
-              <MetricCard label="Spent This Month" value="S$3,180.00" icon={Wallet} />
+              <MetricCard
+                label="Spent This Month"
+                value={`S$${spentThisMonth.toLocaleString("en-SG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                icon={Wallet}
+              />
             </div>
 
             <div className="flex flex-col gap-3">
