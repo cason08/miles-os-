@@ -60,12 +60,17 @@ export default async function DebugEmailPage({
   // text converted from text/html rather than sending raw markup to Claude.
   const emailTextForExtraction = plainText ?? (html ? htmlToReadableText(html) : null);
 
-  // Gmail's received timestamp, as a plain YYYY-MM-DD string -- passed to
-  // the extraction pipeline as a fallback for emails whose body states only
-  // a time (e.g. "12:25 PM") with no calendar date.
-  const receivedAtDate = message?.internalDate
-    ? new Date(Number(message.internalDate)).toISOString().slice(0, 10)
-    : null;
+  // Gmail's received timestamp, parsed once and derived into two plain
+  // string forms (per the established preference for plain strings over
+  // Date objects crossing the Server Component -> Client Component ->
+  // Server Action boundary):
+  // - receivedAtDate: YYYY-MM-DD, passed to the (frozen) extraction prompt
+  //   as a fallback for emails whose body states only a time with no date.
+  // - gmailReceivedAtIso: full timestamp, stored as Gmail metadata on the
+  //   persisted Transaction row.
+  const receivedAt = message?.internalDate ? new Date(Number(message.internalDate)) : null;
+  const receivedAtDate = receivedAt ? receivedAt.toISOString().slice(0, 10) : null;
+  const gmailReceivedAtIso = receivedAt ? receivedAt.toISOString() : null;
 
   return (
     <main style={{ fontFamily: "monospace", padding: 24 }}>
@@ -109,6 +114,9 @@ export default async function DebugEmailPage({
               <ExtractTransactionButton
                 emailText={emailTextForExtraction}
                 receivedAtDate={receivedAtDate}
+                gmailMessageId={message.id}
+                gmailThreadId={message.threadId}
+                gmailReceivedAtIso={gmailReceivedAtIso}
               />
             </>
           )}

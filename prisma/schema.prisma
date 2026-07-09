@@ -11,3 +11,26 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Transaction {
+  id String @id @default(cuid())
+
+  // Gmail metadata
+  gmailMessageId  String   @unique
+  gmailThreadId   String
+  gmailReceivedAt DateTime
+
+  // Normalized financial transaction data only -- mirrors Transaction /
+  // TransactionSchema in src/lib/transaction.ts, minus confidence/reasoning
+  // (AI debugging metadata, deliberately not persisted here)
+  bank            String
+  merchant        String?
+  amount          Decimal
+  currency        String
+  transactionKind String
+  direction       String
+  cardLastFour    String?
+  transactionDate DateTime @db.Date
+
+  createdAt DateTime @default(now())
+}

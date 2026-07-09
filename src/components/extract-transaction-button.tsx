@@ -6,9 +6,15 @@ import { extractTransaction, type ExtractResult } from "@/app/debug/email/[id]/a
 export function ExtractTransactionButton({
   emailText,
   receivedAtDate,
+  gmailMessageId,
+  gmailThreadId,
+  gmailReceivedAtIso,
 }: {
   emailText: string;
   receivedAtDate: string | null;
+  gmailMessageId: string;
+  gmailThreadId: string;
+  gmailReceivedAtIso: string | null;
 }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ExtractResult | null>(null);
@@ -16,7 +22,13 @@ export function ExtractTransactionButton({
   async function handleClick() {
     setLoading(true);
     setResult(null);
-    const outcome = await extractTransaction(emailText, receivedAtDate);
+    const outcome = await extractTransaction(
+      emailText,
+      receivedAtDate,
+      gmailMessageId,
+      gmailThreadId,
+      gmailReceivedAtIso,
+    );
     setResult(outcome);
     setLoading(false);
   }
@@ -61,6 +73,16 @@ export function ExtractTransactionButton({
               <h2>Parsed Transaction object</h2>
               <pre style={{ whiteSpace: "pre-wrap" }}>
                 {JSON.stringify(result.validation.transaction, null, 2)}
+              </pre>
+            </>
+          )}
+
+          {result.persisted && (
+            <>
+              <h2>Persisted</h2>
+              <p style={{ color: "green" }}>✓ Saved to database (id: {result.persisted.id})</p>
+              <pre style={{ whiteSpace: "pre-wrap" }}>
+                {JSON.stringify(result.persisted, null, 2)}
               </pre>
             </>
           )}
