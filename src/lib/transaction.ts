@@ -13,6 +13,7 @@ export const TransactionSchema = z.object({
     "payment",
     "other",
   ]),
+  direction: z.enum(["in", "out"]),
   cardLastFour: z.string().nullable(),
   date: z.iso.date(),
   confidence: z.number().min(0).max(1),

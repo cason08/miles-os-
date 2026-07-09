@@ -60,6 +60,13 @@ export default async function DebugEmailPage({
   // text converted from text/html rather than sending raw markup to Claude.
   const emailTextForExtraction = plainText ?? (html ? htmlToReadableText(html) : null);
 
+  // Gmail's received timestamp, as a plain YYYY-MM-DD string -- passed to
+  // the extraction pipeline as a fallback for emails whose body states only
+  // a time (e.g. "12:25 PM") with no calendar date.
+  const receivedAtDate = message?.internalDate
+    ? new Date(Number(message.internalDate)).toISOString().slice(0, 10)
+    : null;
+
   return (
     <main style={{ fontFamily: "monospace", padding: 24 }}>
       {backLink}
@@ -99,7 +106,10 @@ export default async function DebugEmailPage({
           {emailTextForExtraction && (
             <>
               <h2>AI Prompt Playground</h2>
-              <ExtractTransactionButton emailText={emailTextForExtraction} />
+              <ExtractTransactionButton
+                emailText={emailTextForExtraction}
+                receivedAtDate={receivedAtDate}
+              />
             </>
           )}
         </>
