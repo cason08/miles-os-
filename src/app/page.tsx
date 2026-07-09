@@ -17,8 +17,10 @@ import {
   getProjectedAvailableCash,
   type CommitmentStatus,
 } from "@/lib/commitments";
+import { getLastSyncedAt } from "@/lib/daily-sync";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ConnectGmailButton } from "@/components/connect-gmail-button";
+import { SyncGmailControl } from "@/components/sync-gmail-control";
 import { Card } from "@/components/ui/card";
 import { MetricCard } from "@/components/ui/metric-card";
 import { SectionHeader } from "@/components/ui/section-header";
@@ -106,6 +108,17 @@ function getGreeting(hour: number) {
   return "Good evening";
 }
 
+function formatLastSynced(date: Date | null): string {
+  if (!date) return "Never synced yet";
+  return date.toLocaleString("en-SG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export default async function HomePage() {
   const session = await auth();
 
@@ -133,6 +146,7 @@ export default async function HomePage() {
     (sum, commitment) => sum + commitment.expectedAmount,
     0,
   );
+  const lastSyncedAt = await getLastSyncedAt();
   // Sign before the currency symbol (e.g. "-S$1,500.00") -- toLocaleString
   // alone would put it after ("S$-1,500.00"), which reads wrong. Needed
   // now that the Credit Cards breakdown section is a negative total.
@@ -169,7 +183,7 @@ export default async function HomePage() {
           </p>
         </div>
 
-        {!session.gmailConnected && (
+        {!session.gmailConnected ? (
           <Card
             data-slot="gmail-connect-banner"
             className="flex-col items-start justify-between gap-4 sm:flex-row sm:items-center"
@@ -184,6 +198,10 @@ export default async function HomePage() {
               </div>
             </div>
             <ConnectGmailButton />
+          </Card>
+        ) : (
+          <Card data-slot="gmail-sync-banner">
+            <SyncGmailControl lastSyncedLabel={formatLastSynced(lastSyncedAt)} />
           </Card>
         )}
 

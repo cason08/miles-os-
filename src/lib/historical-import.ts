@@ -24,6 +24,12 @@ export type ImportRecord = {
   detail: string;
   /** Only present when status === "failed" -- feeds failureBreakdown. */
   stage?: ImportFailureStage;
+  /** The message's real Gmail receive time -- present whenever the message
+   * was actually fetched (i.e. every status except "skipped", and "failed"
+   * at the "fetch" stage itself). Used by import-checkpoint.ts to advance
+   * the sync checkpoint past processed-but-not-imported emails (ignored,
+   * failed) that never get a Transaction row of their own. */
+  receivedAt?: Date;
 };
 
 export type ImportSummary = {
@@ -148,6 +154,10 @@ export async function runHistoricalImport(
       const subject = headerValue(headers, "Subject");
       const sender = headerValue(headers, "From");
 
+      const receivedAt = message.internalDate ? new Date(Number(message.internalDate)) : null;
+      const receivedAtDate = receivedAt ? receivedAt.toISOString().slice(0, 10) : null;
+      const gmailReceivedAtIso = receivedAt ? receivedAt.toISOString() : null;
+
       const plainText = findBodyPart(message.payload, "text/plain");
       const html = findBodyPart(message.payload, "text/html");
       const emailText = plainText ?? (html ? htmlToReadableText(html) : null);
@@ -159,13 +169,10 @@ export async function runHistoricalImport(
           status: "failed",
           stage: "extraction",
           detail: "No plain text or HTML body found to extract from.",
+          receivedAt: receivedAt ?? undefined,
         });
         continue;
       }
-
-      const receivedAt = message.internalDate ? new Date(Number(message.internalDate)) : null;
-      const receivedAtDate = receivedAt ? receivedAt.toISOString().slice(0, 10) : null;
-      const gmailReceivedAtIso = receivedAt ? receivedAt.toISOString() : null;
 
       let responseText: string;
       try {
@@ -178,6 +185,7 @@ export async function runHistoricalImport(
           status: "failed",
           stage: "extraction",
           detail: errorMessage(err),
+          receivedAt: receivedAt ?? undefined,
         });
         continue;
       }
@@ -193,6 +201,7 @@ export async function runHistoricalImport(
                 sender,
                 status: "ignored",
                 detail: nonTransactionReason,
+                receivedAt: receivedAt ?? undefined,
               }
             : {
                 gmailMessageId: id,
@@ -201,6 +210,7 @@ export async function runHistoricalImport(
                 status: "failed",
                 stage: "validation",
                 detail: validation.errors.join("; "),
+                receivedAt: receivedAt ?? undefined,
               },
         );
         continue;
@@ -218,6 +228,7 @@ export async function runHistoricalImport(
           sender,
           status: "imported",
           detail: `${persisted.merchant ?? "Unknown merchant"} — ${persisted.currency} ${persisted.amount}`,
+          receivedAt: receivedAt ?? undefined,
         });
       } catch (err) {
         records.push({
@@ -227,6 +238,7 @@ export async function runHistoricalImport(
           status: "failed",
           stage: "persistence",
           detail: errorMessage(err),
+          receivedAt: receivedAt ?? undefined,
         });
       }
     } catch (err) {

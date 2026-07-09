@@ -93,3 +93,23 @@ model MonthlyCommitment {
 
   createdAt DateTime @default(now())
 }
+
+// General-purpose app-level singleton row (fixed id) -- not sync-specific.
+// Today it only holds sync-related fields; future app-level metadata
+// (e.g. a balance-baseline timestamp, onboarding state) can live here too
+// without a new table.
+model AppState {
+  id String @id @default("singleton")
+
+  // Purely product/UX metadata ("last time the user successfully ran
+  // Sync") -- never read by the importer itself.
+  lastSyncedAt DateTime?
+
+  // Internal engine checkpoint: the newest gmailReceivedAt among ALL
+  // processed messages (imported, ignored, or failed-past-fetch), not just
+  // successfully imported ones. Ignored/failed emails never get a
+  // Transaction row, so without this, Daily Sync would keep re-fetching
+  // and re-sending them to Claude on every run until an unrelated real
+  // transaction happened to move the checkpoint forward.
+  lastProcessedGmailReceivedAt DateTime?
+}
