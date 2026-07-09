@@ -8,7 +8,7 @@ function buildPrompt(emailText: string): string {
 Return exactly one JSON object with this schema and nothing else:
 
 {
-  "bank": string,                 // one of: "DBS", "OCBC", "Citibank"
+  "bank": string,                 // one of: "DBS", "OCBC", "Citibank", "UOB"
   "merchant": string | null,      // merchant/payee name as it appears in the email, or null if not stated
   "amount": number,               // absolute transaction amount as a number -- no currency symbol, no thousands separator
   "currency": string,             // ISO 4217 currency code, e.g. "SGD", "USD"
