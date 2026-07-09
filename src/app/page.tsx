@@ -104,13 +104,16 @@ function getGreeting(hour: number) {
 
 function formatLastSynced(date: Date | null): string {
   if (!date) return "Never synced yet";
-  return date.toLocaleString("en-SG", {
+  const datePart = date.toLocaleDateString("en-SG", {
     day: "numeric",
     month: "short",
     year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
   });
+  const hour24 = date.getHours();
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  const meridiem = hour24 >= 12 ? "pm" : "am";
+  const hour12 = hour24 % 12 || 12;
+  return `${datePart}, ${hour12}:${minutes}${meridiem}`;
 }
 
 export default async function HomePage() {
@@ -174,16 +177,21 @@ export default async function HomePage() {
       </header>
 
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-6 py-8 sm:py-10">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {greeting}, {firstName}.
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Here&apos;s where things stand today.
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {greeting}, {firstName}.
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Here&apos;s where things stand today.
+            </p>
+          </div>
+          {session.gmailConnected && (
+            <SyncGmailControl lastSyncedLabel={formatLastSynced(lastSyncedAt)} />
+          )}
         </div>
 
-        {!session.gmailConnected ? (
+        {!session.gmailConnected && (
           <Card
             data-slot="gmail-connect-banner"
             className="flex-col items-start justify-between gap-4 sm:flex-row sm:items-center"
@@ -198,10 +206,6 @@ export default async function HomePage() {
               </div>
             </div>
             <ConnectGmailButton />
-          </Card>
-        ) : (
-          <Card data-slot="gmail-sync-banner">
-            <SyncGmailControl lastSyncedLabel={formatLastSynced(lastSyncedAt)} />
           </Card>
         )}
 

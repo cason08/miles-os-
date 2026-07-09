@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Mail } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { runDailySyncAction } from "@/app/actions";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { ImportSummary } from "@/lib/historical-import";
 
 type SyncResult =
@@ -35,28 +35,33 @@ export function SyncGmailControl({ lastSyncedLabel }: { lastSyncedLabel: string 
   }
 
   return (
-    <div className="flex w-full flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-      <div className="flex items-center gap-3">
-        <Mail className="size-5 shrink-0 text-primary" strokeWidth={1.75} />
-        <div>
-          <p className="text-sm font-medium">Gmail sync</p>
-          <p className="text-sm text-muted-foreground">Last synced: {lastSyncedLabel}</p>
-        </div>
+    <div className="flex flex-col items-end gap-1">
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs text-muted-foreground">Last sync: {lastSyncedLabel}</span>
+        <button
+          type="button"
+          onClick={handleSync}
+          disabled={pending}
+          aria-label="Sync Gmail now"
+          className="cursor-pointer border-none bg-transparent p-0 text-muted-foreground transition-colors duration-200 ease-out hover:text-foreground disabled:cursor-default"
+        >
+          <RefreshCw className={cn("size-3.5", pending && "animate-spin")} strokeWidth={1.75} />
+        </button>
       </div>
-      <div className="flex flex-col items-start gap-1.5 sm:items-end">
-        <Button type="button" onClick={handleSync} disabled={pending}>
-          {pending ? "Syncing..." : "Sync Now"}
-        </Button>
-        {result && (
-          <p className="max-w-xs text-xs text-muted-foreground sm:text-right">
-            {result.kind === "error" && result.message}
-            {result.kind === "up-to-date" &&
-              "✓ Already up to date — No new supported bank emails found."}
-            {result.kind === "complete" &&
-              `✓ Sync complete — Imported: ${result.imported}, Ignored: ${result.ignored}, Failed: ${result.failed}`}
-          </p>
-        )}
-      </div>
+      {result && (
+        <p
+          className={cn(
+            "max-w-xs text-right text-xs",
+            result.kind === "error" ? "text-destructive" : "text-muted-foreground",
+          )}
+        >
+          {result.kind === "error" && result.message}
+          {result.kind === "up-to-date" &&
+            "✓ Already up to date — no new supported bank emails found."}
+          {result.kind === "complete" &&
+            `✓ Sync complete — Imported: ${result.imported}, Ignored: ${result.ignored}, Failed: ${result.failed}`}
+        </p>
+      )}
     </div>
   );
 }
