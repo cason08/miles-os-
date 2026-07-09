@@ -86,16 +86,19 @@ Maps DESIGN_SYSTEM.md §5's component table to actual files under `src/component
 | Component | File | Notes |
 |---|---|---|
 | Card (base surface) | `card.tsx` | Underlies every other component below |
-| Metric Card | `metric-card.tsx` | One number, one label, optional trend, optional `accent` (assets/liabilities/rewards/primary) |
+| Collapsible | `collapsible.tsx` | Click-to-expand disclosure: label + chevron toggle, animated reveal, collapsed by default. Client component |
+| Metric Card | `metric-card.tsx` | One number, one label, optional trend, optional `accent` (assets/liabilities/rewards/primary); optional `padding="spacious"` (p-8) for a page's single visual anchor; optional `children` for embedding a Collapsible (e.g. Home's Net Worth breakdown) |
 | Section Header | `section-header.tsx` | Title + optional "See all →" action |
 | Status Badge | `status-badge.tsx` | Filled-background badge; the only place colour fills a shape |
 | Progress Bar | `progress-bar.tsx` | Used-vs-limit; shared by budgets and (later) bonus-cap usage |
 | Transaction Row | `transaction-row.tsx` | Merchant, category, account/card, source badge, right-aligned tabular amount |
+| Balance Group Row | `balance-group-row.tsx` | Icon + label + meta + amount row for one Net Worth breakdown group; optional "Preview" badge for a group not yet backed by a live data source |
 | Recommendation Card | `recommendation-card.tsx` | One recommended action + one-line reason, primary-accented |
-| Insight Card | `insight-card.tsx` | Type tag + title + one-line "why it matters" preview |
+| Insight Card | `insight-card.tsx` | Type tag + title + one-line "why it matters" preview; optional `size="compact"` (tighter padding, 1-line preview clamp) for stacking several, e.g. Home's up-to-three teaser list |
 | Budget Card | `budget-card.tsx` | Category, spent/limit, status badge, progress bar |
+| Credit Card Summary Row | `credit-card-summary-row.tsx` | Compact per-card view: name, outstanding balance, bonus-cap bar + label. Home only — deliberately narrower than the fuller Credit Card Card below, which will carry cycle dates and an earning-rate table Home doesn't need |
 
-Not yet built (no page needs them yet): Account Card, Credit Card Card, Chart Container / Trend line / Simple bar. Build these when Accounts, Wallet, and Budgets are implemented (ROADMAP.md M9+) — reuse the tokens in this document rather than re-deriving the palette.
+Not yet built (no page needs them yet): Account Card, the fuller Credit Card Card (cycle dates, earning-rate table — see the note above), Chart Container / Trend line / Simple bar. Build these when Accounts, Wallet, and Budgets are implemented (ROADMAP.md M9+) — reuse the tokens in this document rather than re-deriving the palette.
 
 ## 8. Motion
 
@@ -107,6 +110,16 @@ One easing/duration pair, reused everywhere: `transition-all duration-200 ease-o
 
 ## 10. Applying This to Home
 
-Home (`src/app/page.tsx`) is the first and, as of this writing, only page built against this system — it exists to prove the system, not just to ship a page. It uses **placeholder data only** (clearly fabricated Singapore-context figures — SGD amounts, DBS/UOB/OCBC/Citibank institutions, KrisFlyer/DBS Points/HeyMax programmes per PRODUCT.md §6.5) so the visual language can be evaluated against realistic content shapes before any ingestion/budgeting/rewards module exists to supply real numbers. Every field PRODUCT.md §4 requires on Home is represented: Net Worth (hero Metric Card), Cash Available and Credit Card Outstanding (Metric Cards, tagged Assets/Liabilities), Budget Status (overall bar + categories closest to their limits), Recent Transactions, Recommended Card, and Miles Earned This Month — plus one teased Insight, per NAVIGATION.md §3's "Home teases, at most one."
+Home (`src/app/page.tsx`) is the first and, as of this writing, only page built against this system — it exists to prove the system, not just to ship a page. It uses **placeholder data only** (clearly fabricated Singapore-context figures — SGD amounts, DBS/UOB/OCBC/Citibank institutions, KrisFlyer/DBS Points/HeyMax programmes per PRODUCT.md §6.5, plus a Mari Invest and CPF preview in the Net Worth breakdown below, marked with a "Preview" badge since neither is wired to a live data source yet) so the visual language can be evaluated against realistic content shapes before any ingestion/budgeting/rewards module exists to supply real numbers.
+
+**Dashboard v2** restructures Home around three side-by-side decision areas rather than a flat top-to-bottom stack, on an asymmetric three-column grid (`lg:grid-cols-[1.15fr_1fr_1fr]`) that gives the Overview column — and the Net Worth hero inside it — more width and whitespace than the other two, keeping it the page's visual anchor per DESIGN_SYSTEM.md §4 ("Numbers are the hero of the application"):
+
+- **Overview:** Net Worth (hero Metric Card, `padding="spacious"`) with a collapsed-by-default "View Breakdown" Collapsible underneath, listing Cash accounts, Investment accounts, CPF, Credit cards, and Other assets as Balance Group Rows — then Available Cash and Spent This Month stacked below, then up to three compact Insight Cards.
+- **This Month:** overall budget health, then a fixed four-category stack (Food, Transport, Shopping, Life & Entertainment — deliberately not the dynamic "closest to limit" set, for muscle-memory scanning).
+- **Credit Cards:** Total Miles and Miles Earned This Month, then one Credit Card Summary Row per card (outstanding balance + bonus-cap progress together, so both read in one glance).
+
+Every column stacks its cards single-file rather than in nested grids — narrower sub-grids were tried and overflowed at three-columns-wide, so the rule going forward is: only nest a metric grid inside a dashboard column after checking it at the column's real rendered width, not the page's full width.
+
+Recommended Card no longer appears on Home (PRODUCT.md §4, §6.4; NAVIGATION.md §3) — it remains a Wallet feature. Insights may now tease up to three items instead of one (PRODUCT.md §4, §5; NAVIGATION.md §2). Recent Transactions sits full-width below the three-column grid and is deliberately the primary focus once a reader scrolls past it.
 
 The page's authentication/session/Gmail-connection logic (the redirect guard and the connected/not-connected banner) is unchanged from the prior implementation — this document and the Home redesign are visual-only and do not alter any business logic.

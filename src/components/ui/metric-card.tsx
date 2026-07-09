@@ -29,23 +29,32 @@ function MetricCard({
   value,
   accent = "neutral",
   size = "default",
+  padding = "default",
   icon: Icon,
   trend,
   className,
+  children,
 }: {
   label: string
   /** Pre-formatted, currency/unit included, e.g. "S$142,918.20" or "3,240 mi". */
   value: string
   accent?: MetricAccent
   size?: "default" | "hero"
+  /** "spacious" (p-8) for a page's single visual anchor; "default" (p-6) otherwise. */
+  padding?: "default" | "spacious"
   icon?: LucideIcon
   trend?: { direction: "up" | "down" | "flat"; label: string }
   className?: string
+  /** Optional content below the trend line, e.g. a breakdown disclosure. */
+  children?: React.ReactNode
 }) {
   const TrendIcon = trend ? TREND_ICONS[trend.direction] : null
 
   return (
-    <Card data-slot="metric-card" className={cn("gap-3", className)}>
+    <Card
+      data-slot="metric-card"
+      className={cn("gap-3", padding === "spacious" && "p-8", className)}
+    >
       <div className="flex items-center justify-between">
         <span className="text-sm text-muted-foreground">{label}</span>
         {Icon && (
@@ -66,6 +75,7 @@ function MetricCard({
           <span>{trend.label}</span>
         </div>
       )}
+      {children}
     </Card>
   )
 }

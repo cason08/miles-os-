@@ -39,7 +39,7 @@ The 5 day-one reward programmes; manual balance override; transfer-history loggi
 **Working app:** a Miles page with real balances and a transfer history you trust.
 
 ## M9 — Home Page
-Build the primary landing page (PRODUCT.md §4): Net Worth, Cash Available, Credit Card Outstanding, Budget Status, Recent Transactions, Recommended Card, Miles Earned This Month — pulling live from the Institutions/Accounts/Credit Cards (M1), Budgets (M5), Rewards (M6–M7), and Miles (M8) modules already built.
+Build the primary landing page (PRODUCT.md §4): Net Worth, Cash Available, Credit Card Outstanding, Budget Status, Recent Transactions, Miles Earned This Month — pulling live from the Institutions/Accounts/Credit Cards (M1), Budgets (M5), Rewards (M6–M7), and Miles (M8) modules already built. Dashboard v2 (a later visual-only pass, see VISUAL_DIRECTION.md §10) restructures this into three columns and removes Recommended Card from Home specifically — the recommendation engine itself still ships in M7, surfaced on Wallet instead.
 **Working app:** open the app and understand your full financial position within a few seconds — Home is now the default landing page on both desktop and mobile.
 
 ## M10 — Duplicates, Corrections & Audit Trail

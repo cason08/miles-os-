@@ -44,7 +44,7 @@ function BudgetCard({
   return (
     <Card data-slot="budget-card" className={cn("gap-3", className)}>
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium">{category}</span>
+        <span className="min-w-0 truncate text-sm font-medium">{category}</span>
         <StatusBadge variant={STATUS_VARIANT[status]}>{STATUS_LABEL[status]}</StatusBadge>
       </div>
       <ProgressBar value={percent} variant={STATUS_PROGRESS_VARIANT[status]} />

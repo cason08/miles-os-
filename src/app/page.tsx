@@ -1,5 +1,14 @@
 import { redirect } from "next/navigation";
-import { CreditCard, Landmark, Mail, Plane, Wallet } from "lucide-react";
+import {
+  CreditCard,
+  Landmark,
+  LineChart,
+  Mail,
+  Package,
+  Plane,
+  ShieldCheck,
+  Wallet,
+} from "lucide-react";
 import { auth } from "@/lib/auth";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ConnectGmailButton } from "@/components/connect-gmail-button";
@@ -9,13 +18,80 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { BudgetCard } from "@/components/ui/budget-card";
 import { TransactionRow } from "@/components/ui/transaction-row";
-import { RecommendationCard } from "@/components/ui/recommendation-card";
 import { InsightCard } from "@/components/ui/insight-card";
+import { Collapsible } from "@/components/ui/collapsible";
+import { BalanceGroupRow, type BalanceGroupAccent } from "@/components/ui/balance-group-row";
+import { CreditCardSummaryRow } from "@/components/ui/credit-card-summary-row";
 
-// Placeholder data only — no ingestion/budgeting/rewards module exists yet
-// (ROADMAP.md M3-M8). Figures are fabricated but internally plausible for
-// the Singapore-context PRD (PRODUCT.md §6.1, §6.5), so the visual design
-// can be evaluated against a realistic content shape.
+// Placeholder data only — Transaction Persistence is being built in a
+// separate session (ROADMAP.md M3-M8). Figures are fabricated but
+// internally consistent (e.g. the two cards' outstanding balances sum to
+// the "Credit cards" line in the Net Worth breakdown) so the layout can be
+// judged against a realistic content shape.
+const BALANCE_GROUPS: {
+  icon: typeof Landmark;
+  accent: BalanceGroupAccent;
+  label: string;
+  meta: string;
+  amount: string;
+  preview?: boolean;
+}[] = [
+  { icon: Landmark, accent: "assets", label: "Cash accounts", meta: "3 accounts", amount: "S$24,650.30" },
+  {
+    icon: LineChart,
+    accent: "assets",
+    label: "Investment accounts",
+    meta: "Mari Invest · 1 account",
+    amount: "S$8,500.00",
+    preview: true,
+  },
+  { icon: ShieldCheck, accent: "assets", label: "CPF", meta: "OA · SA · MA", amount: "S$112,648.35", preview: true },
+  { icon: CreditCard, accent: "liabilities", label: "Credit cards", meta: "2 cards", amount: "-S$3,180.45" },
+  { icon: Package, accent: "assets", label: "Other assets", meta: "1 item", amount: "S$300.00", preview: true },
+];
+
+const BUDGET_CATEGORIES = [
+  { category: "Food", spent: "S$612", limit: "S$700", percent: 87, status: "warning" as const },
+  { category: "Transport", spent: "S$186", limit: "S$300", percent: 62, status: "on-track" as const },
+  { category: "Shopping", spent: "S$524", limit: "S$500", percent: 105, status: "exceeded" as const },
+  { category: "Life & Entertainment", spent: "S$340", limit: "S$450", percent: 76, status: "on-track" as const },
+];
+
+const CREDIT_CARDS = [
+  {
+    name: "UOB Preferred Platinum Visa",
+    outstanding: "-S$1,940.15",
+    bonusLabel: "S$1,760 of S$2,000 bonus cap",
+    bonusPercent: 88,
+    bonusVariant: "warning" as const,
+  },
+  {
+    name: "DBS Woman's World Mastercard",
+    outstanding: "-S$1,240.30",
+    bonusLabel: "S$240 of S$800 bonus cap",
+    bonusPercent: 30,
+    bonusVariant: "primary" as const,
+  },
+];
+
+const INSIGHTS = [
+  {
+    type: "Spending trend",
+    title: "Dining is running 32% above your 3-month average",
+    preview: "Mostly at Din Tai Fung and Ya Kun — S$210 more than a typical month so far.",
+  },
+  {
+    type: "Reward opportunity",
+    title: "UOB card is 88% toward its bonus cap",
+    preview: "Switch everyday spend to DBS Woman's World for the rest of the month.",
+  },
+  {
+    type: "Budget observation",
+    title: "Shopping has run over budget three months running",
+    preview: "Worth raising the limit, or trimming discretionary buys.",
+  },
+];
+
 const RECENT_TRANSACTIONS = [
   {
     merchant: "Grab",
@@ -57,12 +133,30 @@ const RECENT_TRANSACTIONS = [
     date: "4 days ago",
     source: "manual" as const,
   },
-];
-
-const BUDGET_CATEGORIES = [
-  { category: "Shopping", spent: "S$524", limit: "S$500", percent: 105, status: "exceeded" as const },
-  { category: "Dining", spent: "S$612", limit: "S$700", percent: 87, status: "warning" as const },
-  { category: "Groceries", spent: "S$270", limit: "S$500", percent: 54, status: "on-track" as const },
+  {
+    merchant: "Salary — Acme Corp",
+    category: "Income",
+    account: "OCBC 365 Account",
+    amount: "+S$6,200.00",
+    date: "5 days ago",
+    source: "imported" as const,
+  },
+  {
+    merchant: "SP Group",
+    category: "Utilities",
+    account: "OCBC 365 Account",
+    amount: "-S$112.60",
+    date: "6 days ago",
+    source: "imported" as const,
+  },
+  {
+    merchant: "Ya Kun Kaya Toast",
+    category: "Dining",
+    account: "UOB Preferred Platinum",
+    amount: "-S$9.80",
+    date: "6 days ago",
+    source: "imported" as const,
+  },
 ];
 
 function getGreeting(hour: number) {
@@ -127,67 +221,87 @@ export default async function HomePage() {
           </Card>
         )}
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-4">
-          <MetricCard
-            className="sm:col-span-2"
-            size="hero"
-            label="Net Worth"
-            value="S$142,918.20"
-            icon={Wallet}
-            accent="primary"
-            trend={{ direction: "up", label: "Up 2.4% from last month" }}
-          />
-          <MetricCard
-            label="Cash Available"
-            value="S$24,650.30"
-            icon={Landmark}
-            accent="assets"
-          />
-          <MetricCard
-            label="Credit Card Outstanding"
-            value="-S$3,180.45"
-            icon={CreditCard}
-            accent="liabilities"
-          />
-        </div>
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.15fr_1fr_1fr]">
+          {/* Overview */}
+          <div className="flex flex-col gap-8">
+            <SectionHeader title="Overview" />
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <MetricCard
-            label="Miles Earned This Month"
-            value="3,240 mi"
-            icon={Plane}
-            accent="rewards"
-            trend={{ direction: "up", label: "Up 18% vs last month" }}
-          />
-          <RecommendationCard
-            action="Use DBS Woman's World"
-            reason="this is an online purchase and you still have S$240 of bonus spend remaining this month."
-          />
-        </div>
+            <MetricCard
+              size="hero"
+              padding="spacious"
+              className="gap-4"
+              label="Net Worth"
+              value="S$142,918.20"
+              icon={Wallet}
+              accent="primary"
+              trend={{ direction: "up", label: "Up 2.4% from last month" }}
+            >
+              <Collapsible label="View Breakdown">
+                <div className="flex flex-col divide-y divide-border">
+                  {BALANCE_GROUPS.map((group) => (
+                    <BalanceGroupRow key={group.label} {...group} />
+                  ))}
+                </div>
+              </Collapsible>
+            </MetricCard>
 
-        <InsightCard
-          type="Spending trend"
-          title="Dining is running 32% above your 3-month average"
-          preview="Mostly at Din Tai Fung and Ya Kun — S$210 more than a typical month so far."
-        />
-
-        <section className="flex flex-col gap-4">
-          <SectionHeader title="Budgets" actionLabel="See all" actionHref="/budgets" />
-          <Card className="gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">This month, overall</span>
-              <span className="text-sm tabular-nums text-muted-foreground">
-                S$3,180 of S$4,500
-              </span>
+            <div className="flex flex-col gap-6">
+              <MetricCard label="Available Cash" value="S$24,650.30" icon={Landmark} accent="assets" />
+              <MetricCard label="Spent This Month" value="S$3,180.00" icon={Wallet} />
             </div>
-            <ProgressBar value={70.7} />
-          </Card>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-            {BUDGET_CATEGORIES.map((budget) => (
-              <BudgetCard key={budget.category} {...budget} />
-            ))}
+
+            <div className="flex flex-col gap-3">
+              {INSIGHTS.map((insight) => (
+                <InsightCard key={insight.title} size="compact" {...insight} />
+              ))}
+            </div>
           </div>
-        </section>
+
+          {/* This Month */}
+          <div className="flex flex-col gap-6">
+            <SectionHeader title="This Month" actionLabel="See all" actionHref="/budgets" />
+
+            <Card className="gap-3">
+              <span className="text-sm text-muted-foreground">Budget health, overall</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-semibold tabular-nums">71%</span>
+                <span className="text-sm text-muted-foreground">of monthly budget used</span>
+              </div>
+              <ProgressBar value={70.7} />
+              <span className="text-xs tabular-nums text-muted-foreground">
+                S$3,180 of S$4,500 · S$1,320 left
+              </span>
+            </Card>
+
+            <div className="flex flex-col gap-4">
+              {BUDGET_CATEGORIES.map((budget) => (
+                <BudgetCard key={budget.category} {...budget} />
+              ))}
+            </div>
+          </div>
+
+          {/* Credit Cards */}
+          <div className="flex flex-col gap-6">
+            <SectionHeader title="Credit Cards" actionLabel="See all" actionHref="/wallet" />
+
+            <div className="flex flex-col gap-6">
+              <MetricCard label="Total Miles" value="182,450 mi" icon={Plane} accent="rewards" />
+              <MetricCard
+                label="Earned This Month"
+                value="3,240 mi"
+                icon={Plane}
+                accent="rewards"
+                trend={{ direction: "up", label: "Up 18% vs last month" }}
+              />
+            </div>
+
+            <div className="flex flex-col gap-4">
+              {CREDIT_CARDS.map((card) => (
+                <CreditCardSummaryRow key={card.name} {...card} />
+              ))}
+            </div>
+          </div>
+        </div>
 
         <section className="flex flex-col gap-4">
           <SectionHeader title="Recent Transactions" actionLabel="See all" actionHref="/transactions" />

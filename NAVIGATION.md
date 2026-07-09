@@ -55,7 +55,7 @@ Notifications / Activity Centre — global, reachable from every page via a
 persistent header icon, not nested under any of the above.
 ```
 
-The rule of thumb: **Home teases, the primary pages summarise, detail pages explain.** Home never shows more than the single most relevant transaction/insight/notification; the primary pages (Transactions, Insights, Notifications) are where the full list lives.
+The rule of thumb: **Home teases, the primary pages summarise, detail pages explain.** Home shows at most one teased Notification and up to three teased Insights; the primary pages (Transactions, Insights, Notifications) are where the full list lives.
 
 ## 3. Pages
 
@@ -64,8 +64,8 @@ Each page below defines: **Purpose**, **Primary questions it answers**, **Inform
 ### Home
 - **Purpose:** the default landing page — a snapshot of current state, not a feed.
 - **Primary questions:** "How am I doing overall?" "Is there anything urgent right now?" "What should I do today?"
-- **Information shown:** Net Worth, Cash Available, Credit Card Outstanding, Budget Status (overall + categories closest to their limit), Recent Transactions, Recommended Card (with reason), Miles Earned This Month, at most one teased Notification and one teased Insight.
-- **Actions:** tap any figure to drill into its owning page (Net Worth → Accounts/Wallet, Cash Available → Accounts, Credit Card Outstanding → Wallet, Budget Status → Budgets, a transaction → Transaction Detail, Recommended Card → Wallet, Miles Earned → Rewards); open the teased notification/insight.
+- **Information shown:** Net Worth, Cash Available, Credit Card Outstanding, Budget Status (overall + categories closest to their limit), Recent Transactions, Miles Earned This Month, at most one teased Notification and up to three teased Insights.
+- **Actions:** tap any figure to drill into its owning page (Net Worth → Accounts/Wallet, Cash Available → Accounts, Credit Card Outstanding → Wallet, Budget Status → Budgets, a transaction → Transaction Detail, Miles Earned → Rewards); open a teased notification/insight.
 - **Related pages:** Accounts, Wallet, Transactions, Budgets, Rewards, Insights, Notifications.
 
 ### Accounts
@@ -189,21 +189,21 @@ A linear, non-skippable-in-order wizard — there is nothing useful to show on H
 3. **Account Setup** — add each Institution in use, then create its Accounts (Assets) and Credit Cards (Liabilities); create each Reward Programme (standalone, or pre-linked to a card being set up).
 4. **Starting Balances** — enter opening balance, currency, and expected balance sign for every Account and Credit Card just created, and a starting balance for every Reward Programme. This is the only point in the product where balances are typed in by hand (PRODUCT.md §3, §6.8) — after this, everything updates automatically.
 5. **Budgets** — review the seeded default category list (editable now or later), optionally set a monthly limit per category. Entirely skippable with sensible defaults; budgets can be configured any time from Settings.
-6. **Home** — onboarding is complete. Net Worth, Cash Available, and Credit Card Outstanding are already correct from step 4's opening balances, even though Recent Transactions, Recommended Card, and Miles Earned will be empty/sparse until the first Gmail sync runs.
+6. **Home** — onboarding is complete. Net Worth, Cash Available, and Credit Card Outstanding are already correct from step 4's opening balances, even though Recent Transactions and Miles Earned will be empty/sparse until the first Gmail sync runs.
 
 ## 5. Daily User Flow
 
 The common case, almost always on mobile, almost always under 30 seconds:
 
 1. Open the app → land on **Home**.
-2. Glance at Net Worth, Cash Available, Credit Card Outstanding, Budget Status, Recommended Card, Miles Earned This Month.
+2. Glance at Net Worth, Cash Available, Credit Card Outstanding, Budget Status, Miles Earned This Month.
 3. Notice a new item in Recent Transactions → tap it → confirm the category is right (or correct it) on **Transaction Detail** → back to Home.
 4. If the header notification badge is lit, open **Notifications**, act on or dismiss it.
 5. If a new insight is teased, open it on **Insights** for the full "why it matters," then close.
 
 That's the whole loop for a normal day — no need to visit Accounts, Wallet, Budgets, or Rewards directly.
 
-A less frequent but important variant, **before making a purchase**: open **Wallet** (or use Home's Recommended Card) to decide which card to use for a specific merchant/category before paying.
+A less frequent but important variant, **before making a purchase**: open **Wallet** to decide which card to use for a specific merchant/category before paying.
 
 A weekly/monthly variant: open **Budgets** to review the month's category status in full, open **Rewards** to check overall miles balances, and browse the full **Insights** feed rather than just the Home teaser.
 

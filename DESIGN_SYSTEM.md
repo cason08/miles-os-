@@ -82,12 +82,13 @@ Only the components MVP actually needs. Each has exactly one visual treatment â€
 | Component | Core content | Used on |
 |---|---|---|
 | **Metric Card** | One number, one label, optional trend indicator | Home |
+| **Disclosure** | Label + chevron toggle that reveals supporting detail on click, collapsed by default | Home (Net Worth breakdown) |
 | **Account Card** | Institution, name, balance, currency, last-synced | Accounts |
 | **Credit Card Card** | Institution, name, balance owed, bonus-cap progress, cycle info | Wallet |
 | **Budget Card** | Category, spent/limit/remaining, progress bar | Budgets |
 | **Transaction Row** | Merchant, amount, category, account/card, source badge | Transactions, Home, detail pages |
-| **Insight Card** | Type tag, title, one-line "why it matters" preview | Insights, Home teaser |
-| **Recommendation Card** | Recommended card/action + its reason, one line | Wallet, Home |
+| **Insight Card** | Type tag, title, one-line "why it matters" preview | Insights, Home (up to three teased) |
+| **Recommendation Card** | Recommended card/action + its reason, one line | Wallet |
 | **Chart Container** | Title, optional legend, the chart itself | Anywhere a chart appears |
 | **Section Header** | Title + optional single action ("See all") | Top of every list/grid section |
 | **Status Badge** | Short label + colour for state | On-track/warning/exceeded, read/unread, imported/manual |

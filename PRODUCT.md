@@ -40,10 +40,9 @@ The Home page is the primary landing page — the first thing shown after login,
 - **Credit Card Outstanding** — sum of Credit Card balances owed, in SGD.
 - **Budget Status** — at-a-glance progress for the current calendar month (overall, and/or whichever categories are closest to their limit).
 - **Recent Transactions** — the latest transactions across every Account and Credit Card.
-- **Recommended Card** — the card the recommendation engine (§6.4) currently suggests using, with its reason.
 - **Miles Earned This Month** — aggregate miles/points earned across all Reward Programmes this month.
 
-Home is a snapshot of current state, not a feed. It is distinct from the Notifications/Activity Centre (§6.7), which lists alerts that need attention, and from the AI Insights Engine (§5), which is a feed of proactive analysis — Home may surface the single most relevant notification or insight as a teaser, but the full lists live on their own pages. Design quality here matters more than anywhere else in the app: this is the page opened most often, and it's what makes Principle 5 ("beautiful enough to enjoy opening every day") true or false in practice.
+Home is a snapshot of current state, not a feed. It is distinct from the Notifications/Activity Centre (§6.7), which lists alerts that need attention, and from the AI Insights Engine (§5), which is a feed of proactive analysis — Home may surface the single most relevant notification, and up to three relevant insights, as teasers, but the full lists live on their own pages. Design quality here matters more than anywhere else in the app: this is the page opened most often, and it's what makes Principle 5 ("beautiful enough to enjoy opening every day") true or false in practice.
 
 ## 5. AI Insights Engine
 
@@ -59,7 +58,7 @@ Insight types:
 
 Every insight must explain **why it matters**, grounded in my own data — the same "never generic advice" discipline already required of card recommendations (§6.4) — not just restate a number already visible on Home (§4) or in Transactions.
 
-**Delivery:** a dedicated Insights feed, generated on a schedule (e.g. after sync, daily or weekly) and also viewable on demand; Home may surface the single most relevant current insight as a teaser. This is a read-only analysis layer over data already produced by ingestion, budgeting, rewards, and miles — it does not own any source data of its own.
+**Delivery:** a dedicated Insights feed, generated on a schedule (e.g. after sync, daily or weekly) and also viewable on demand; Home may surface up to three of the most relevant current insights as teasers. This is a read-only analysis layer over data already produced by ingestion, budgeting, rewards, and miles — it does not own any source data of its own.
 
 **Phasing:** spending trends, budget observations, credit card optimisation opportunities, and reward earning opportunities ship in the MVP, since they only need data the ingestion/budget/reward modules already produce. Subscription analysis and travel spending summaries need recurring-transaction detection and trip-level grouping respectively, and are scoped to V2 (§8).
 
@@ -114,7 +113,7 @@ Core feature, not an afterthought (Principle 4).
 - "Use UOB Preferred Platinum Visa because this mobile wallet transaction still qualifies for 4 mpd."
 - "Use DBS Altitude because you have already reached your bonus cap on the other cards."
 
-**Delivery:** on-demand recommendations available in-app; surfaced on Home (§4) as "Recommended Card"; proactive notifications when approaching a bonus cap, reaching a bonus cap, or when a better card should be used for the remainder of the month; also feeds credit card optimisation opportunities in the AI Insights Engine (§5).
+**Delivery:** on-demand recommendations available in-app; proactive notifications when approaching a bonus cap, reaching a bonus cap, or when a better card should be used for the remainder of the month; also feeds credit card optimisation opportunities in the AI Insights Engine (§5).
 
 **Architecture implication:** the reward engine must be data-driven/configurable per card (rules, caps, rates editable through Settings, §6.6), not hardcoded per-card logic.
 
@@ -223,7 +222,7 @@ Google treats full Gmail read access (`gmail.readonly`) as a "restricted scope."
 - Miles/points tracking for the 5 day-one programmes: per-transaction earning, totals by programme, manual balance override, transfer history log (§6.5).
 - Transaction detail, edit, original-vs-corrected comparison, full audit history, duplicate flagging with confirm/dismiss, manual transaction entry (exception path), import-source tagging (§6.8).
 - Currency handling: SGD reporting, original amount/currency preserved, SGD equivalent (actual or estimated + marked), FX flag (§6.9).
-- **Home page** (§4): Net Worth, Cash Available, Credit Card Outstanding, Budget Status, Recent Transactions, Recommended Card, Miles Earned This Month.
+- **Home page** (§4): Net Worth, Cash Available, Credit Card Outstanding, Budget Status, Recent Transactions, Miles Earned This Month.
 - **AI Insights Engine v1** (§5): spending trends, budget observations, credit card optimisation opportunities, reward earning opportunities.
 - **Settings** (§6.6): Banks, Accounts, Credit Cards, Reward Rules, Categories, Budgets, Notifications, Gmail Connection, AI Settings, Developer Tools.
 - Notifications/Activity Centre (§6.7), kept distinct from AI Insights.

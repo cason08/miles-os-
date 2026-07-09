@@ -7,25 +7,41 @@ function InsightCard({
   type,
   title,
   preview,
+  size = "default",
   className,
 }: {
   /** e.g. "Spending trend" */
   type: string
   title: string
   preview: string
+  /** "compact" for stacking several (e.g. Home's up-to-three teaser list). */
+  size?: "default" | "compact"
   className?: string
 }) {
+  const compact = size === "compact"
+
   return (
     <Card
       data-slot="insight-card"
-      className={cn("flex-row items-start justify-between gap-4", className)}
+      className={cn(
+        "flex-row items-start justify-between gap-4",
+        compact && "gap-3 p-4",
+        className
+      )}
     >
-      <div className="flex gap-3">
+      <div className="flex min-w-0 gap-3">
         <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" strokeWidth={1.75} />
-        <div className="flex flex-col gap-1.5">
+        <div className="flex min-w-0 flex-col gap-1.5">
           <StatusBadge variant="info">{type}</StatusBadge>
           <p className="text-sm font-medium leading-snug">{title}</p>
-          <p className="text-sm leading-snug text-muted-foreground">{preview}</p>
+          <p
+            className={cn(
+              "text-sm leading-snug text-muted-foreground",
+              compact && "line-clamp-1"
+            )}
+          >
+            {preview}
+          </p>
         </div>
       </div>
       <ChevronRight
