@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const TransactionSchema = z.object({
-  bank: z.enum(["DBS", "OCBC", "Citibank"]),
+  bank: z.enum(["DBS", "OCBC", "Citibank", "UOB"]),
   merchant: z.string().nullable(),
   amount: z.number().positive(),
   currency: z.string().length(3),
