@@ -31,7 +31,7 @@ Rules:
 - "confidence" must be a JSON number between 0 and 1, not a percentage or string.
 - For "date": prefer a full calendar date stated explicitly in the email body. Only use the Gmail received date above if the body itself does not state a calendar date (e.g. it only gives a time like "12:25 PM" with no date).
 - For "direction": a card purchase is "out"; a PayNow transfer sent is "out"; a deposit received is "in"; a salary credit is "in"; a refund is "in".
-- If the email is not a transaction alert at all, set every field to null except "reasoning", which should explain why.
+- A financial transaction is an actual completed movement of money into or out of a bank account or payment card. If the email is not reporting a financial transaction, set every field to null except "reasoning", which should explain why. This includes bank administrative or notification emails that are not themselves transactions, e.g.: contact or email details updated, reward/miles points transferred between programs (a points movement, not a money movement), e-statement availability notices, security or login alerts, threshold or limit changes, and similar account-maintenance notices.
 
 Email:
 ${emailText}`;
