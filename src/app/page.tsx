@@ -23,6 +23,8 @@ import { getCategoryBudgetStatuses } from "@/lib/budgets";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ConnectGmailButton } from "@/components/connect-gmail-button";
 import { SyncGmailControl } from "@/components/sync-gmail-control";
+import { PrivacyModeToggle } from "@/components/privacy-mode-toggle";
+import { PrivateAmount } from "@/components/private-amount";
 import { Card } from "@/components/ui/card";
 import { MetricCard } from "@/components/ui/metric-card";
 import { SectionHeader } from "@/components/ui/section-header";
@@ -186,9 +188,12 @@ export default async function HomePage() {
               Here&apos;s where things stand today.
             </p>
           </div>
-          {session.gmailConnected && (
-            <SyncGmailControl lastSyncedLabel={formatLastSynced(lastSyncedAt)} />
-          )}
+          <div className="flex items-center gap-4">
+            {session.gmailConnected && (
+              <SyncGmailControl lastSyncedLabel={formatLastSynced(lastSyncedAt)} />
+            )}
+            <PrivacyModeToggle />
+          </div>
         </div>
 
         {!session.gmailConnected && (
@@ -219,7 +224,7 @@ export default async function HomePage() {
               padding="spacious"
               className="gap-4"
               label="Net Worth"
-              value={formatSgd(netWorth)}
+              value={<PrivateAmount value={formatSgd(netWorth)} />}
               icon={Wallet}
               accent="primary"
             >
@@ -256,13 +261,13 @@ export default async function HomePage() {
             <div className="flex flex-col gap-6">
               <MetricCard
                 label="Available Cash"
-                value={formatSgd(availableCash)}
+                value={<PrivateAmount value={formatSgd(availableCash)} />}
                 icon={Landmark}
                 accent="assets"
               />
               <MetricCard
                 label="Projected Available Cash"
-                value={formatSgd(projectedAvailableCash)}
+                value={<PrivateAmount value={formatSgd(projectedAvailableCash)} />}
                 icon={TrendingUp}
               >
                 <Collapsible label="View Details">

@@ -36,8 +36,9 @@ function MetricCard({
   children,
 }: {
   label: string
-  /** Pre-formatted, currency/unit included, e.g. "S$142,918.20" or "3,240 mi". */
-  value: string
+  /** Pre-formatted, currency/unit included, e.g. "S$142,918.20" or "3,240 mi" --
+   * or a node (e.g. a Privacy Mode-aware wrapper) that renders one. */
+  value: React.ReactNode
   accent?: MetricAccent
   size?: "default" | "hero"
   /** "spacious" (p-8) for a page's single visual anchor; "default" (p-6) otherwise. */
