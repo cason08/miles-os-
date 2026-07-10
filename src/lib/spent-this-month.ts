@@ -19,6 +19,11 @@ export async function getSpentThisMonth(): Promise<number> {
     where: {
       direction: "out",
       transactionDate: { gte: startOfMonth, lt: startOfNextMonth },
+      // Uncategorized transactions (categoryId: null) still count -- only
+      // a category explicitly opted out via countsTowardsSpent: false
+      // (e.g. Transfer) is excluded. Positive OR, not a NOT/negation, so
+      // there's no NULL-propagation risk here unlike the Account-filter bug.
+      OR: [{ categoryId: null }, { category: { countsTowardsSpent: true } }],
     },
     _sum: { amount: true },
   });

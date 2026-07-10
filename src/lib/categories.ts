@@ -6,6 +6,10 @@ export type CategoryData = {
   budget: number | null;
   currency: string;
   color: string | null;
+  /** Whether this category's transactions count towards Budget cards. */
+  countsTowardsBudget: boolean;
+  /** Whether this category's transactions count towards Spent This Month. */
+  countsTowardsSpent: boolean;
 };
 
 export type CategoryInput = {
@@ -13,6 +17,8 @@ export type CategoryInput = {
   budget: number | null;
   currency: string;
   color: string | null;
+  countsTowardsBudget: boolean;
+  countsTowardsSpent: boolean;
 };
 
 export async function getCategories(): Promise<CategoryData[]> {
@@ -27,6 +33,8 @@ export async function getCategories(): Promise<CategoryData[]> {
     budget: row.budget?.toNumber() ?? null,
     currency: row.currency,
     color: row.color,
+    countsTowardsBudget: row.countsTowardsBudget,
+    countsTowardsSpent: row.countsTowardsSpent,
   }));
 }
 

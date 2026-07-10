@@ -23,6 +23,12 @@ export function CategoryForm({
   const [budget, setBudget] = useState(initial?.budget != null ? String(initial.budget) : "");
   const [currency, setCurrency] = useState(initial?.currency ?? "SGD");
   const [color, setColor] = useState(initial?.color ?? DEFAULT_COLOR);
+  const [countsTowardsBudget, setCountsTowardsBudget] = useState(
+    initial?.countsTowardsBudget ?? true,
+  );
+  const [countsTowardsSpent, setCountsTowardsSpent] = useState(
+    initial?.countsTowardsSpent ?? true,
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,6 +38,8 @@ export function CategoryForm({
       budget: budget.trim() === "" ? null : Number(budget),
       currency: currency.trim(),
       color,
+      countsTowardsBudget,
+      countsTowardsSpent,
     };
 
     setSaving(true);
@@ -95,6 +103,25 @@ export function CategoryForm({
             />
             <span className="text-sm tabular-nums text-muted-foreground">{color}</span>
           </div>
+        </label>
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:gap-6">
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={countsTowardsSpent}
+            onChange={(e) => setCountsTowardsSpent(e.target.checked)}
+          />
+          Counts towards Spent This Month
+        </label>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={countsTowardsBudget}
+            onChange={(e) => setCountsTowardsBudget(e.target.checked)}
+          />
+          Counts towards Budget cards
         </label>
       </div>
 

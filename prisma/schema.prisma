@@ -170,6 +170,16 @@ model Category {
   // attached shouldn't disappear from past data when retired.
   isActive Boolean @default(true)
 
+  // Data-driven opt-out from the two spend-facing calculations, so a
+  // category like "Transfer" (moving money between your own accounts,
+  // paying your own credit card) doesn't get hardcoded by name anywhere --
+  // set these two booleans once and getSpentThisMonth()/
+  // getCategoryBudgetStatuses() pick it up automatically. Both default
+  // true so every existing category keeps behaving exactly as before this
+  // migration.
+  countsTowardsBudget Boolean @default(true)
+  countsTowardsSpent  Boolean @default(true)
+
   createdAt DateTime @default(now())
 
   transactions Transaction[]

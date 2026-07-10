@@ -13,9 +13,14 @@ export type CategoryBudgetStatus = {
 // Only categories with a budget set are meaningful here -- a category with
 // no budget has nothing to compare spend against, so it simply doesn't
 // produce a card (still fully visible/manageable on /categories).
+// countsTowardsBudget: false (e.g. Transfer) excludes a category from this
+// list entirely, regardless of whether it has a budget set -- since every
+// transaction in a category shares that category's flag, filtering the
+// category out here also transitively excludes its transactions from the
+// spend sum below (the categoryId: { in: ... } scope never includes it).
 export async function getCategoryBudgetStatuses(): Promise<CategoryBudgetStatus[]> {
   const categories = await prisma.category.findMany({
-    where: { isActive: true, budget: { not: null } },
+    where: { isActive: true, budget: { not: null }, countsTowardsBudget: true },
     orderBy: { name: "asc" },
   });
   if (categories.length === 0) return [];

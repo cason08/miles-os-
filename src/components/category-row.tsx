@@ -14,6 +14,15 @@ function formatCurrency(amount: number, currency: string): string {
   return `${symbol}${value}`;
 }
 
+function exclusionLabel(category: CategoryData): string | null {
+  if (!category.countsTowardsSpent && !category.countsTowardsBudget) {
+    return "Excluded from Spent This Month & Budget";
+  }
+  if (!category.countsTowardsSpent) return "Excluded from Spent This Month";
+  if (!category.countsTowardsBudget) return "Excluded from Budget";
+  return null;
+}
+
 export function CategoryRow({
   category,
   onEdit,
@@ -54,6 +63,9 @@ export function CategoryRow({
         />
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="truncate text-sm font-medium">{category.name}</span>
+          {exclusionLabel(category) && (
+            <span className="truncate text-xs text-muted-foreground">{exclusionLabel(category)}</span>
+          )}
           {error && <span className="text-xs text-destructive">{error}</span>}
         </div>
       </div>
