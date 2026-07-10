@@ -8,6 +8,7 @@ function TransactionRow({
   date,
   source,
   categoryPicker,
+  actions,
   className,
 }: {
   merchant: string
@@ -19,6 +20,9 @@ function TransactionRow({
   /** The interactive category dropdown -- an opaque slot, not a plain
    * string, since assigning a category is an action, not just a label. */
   categoryPicker: React.ReactNode
+  /** Edit/Delete controls -- absent on read-only surfaces (e.g. Home's
+   * Recent Transactions), present on /transactions. */
+  actions?: React.ReactNode
   className?: string
 }) {
   const isCredit = !amount.trim().startsWith("-")
@@ -50,6 +54,7 @@ function TransactionRow({
         >
           {amount}
         </span>
+        {actions}
       </div>
     </div>
   )

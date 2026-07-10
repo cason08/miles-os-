@@ -12,11 +12,14 @@ export async function determineSyncCheckpoint(): Promise<Date> {
 
   // Transition fallback: real transactions may already exist from before
   // this checkpoint was tracked. Once the first sync runs, AppState takes
-  // over permanently.
+  // over permanently. Restricted to source: "gmail" -- gmailReceivedAt is
+  // null for manually entered transactions (Transaction CRUD), which have
+  // no bearing on where Gmail import should resume from.
   const newestTransaction = await prisma.transaction.findFirst({
+    where: { source: "gmail" },
     orderBy: { gmailReceivedAt: "desc" },
   });
-  if (newestTransaction) return newestTransaction.gmailReceivedAt;
+  if (newestTransaction?.gmailReceivedAt) return newestTransaction.gmailReceivedAt;
 
   // True cold start (no AppState row, no Transaction rows at all) -- Daily
   // Sync must still work rather than requiring Historical Import first.

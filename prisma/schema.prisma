@@ -15,15 +15,25 @@ datasource db {
 model Transaction {
   id String @id @default(cuid())
 
-  // Gmail metadata
-  gmailMessageId  String   @unique
-  gmailThreadId   String
-  gmailReceivedAt DateTime
+  // Gmail metadata -- present only when source == "gmail", null for
+  // manually entered transactions. @unique still works correctly with
+  // nulls (Postgres allows multiple NULLs in a unique column).
+  gmailMessageId  String?   @unique
+  gmailThreadId   String?
+  gmailReceivedAt DateTime?
+
+  // "gmail" | "manual" -- plain string, same reasoning as bank/
+  // transactionKind/direction. Existing rows default to "gmail" via this
+  // migration (they're all Gmail-imported today).
+  source String @default("gmail")
 
   // Normalized financial transaction data only -- mirrors Transaction /
   // TransactionSchema in src/lib/transaction.ts, minus confidence/reasoning
   // (AI debugging metadata, deliberately not persisted here)
-  bank            String
+  // Null for manual entries (no sender email to extract a bank name from).
+  // Display prefers the linked Account's name (below) when present,
+  // falling back to this raw string otherwise.
+  bank            String?
   merchant        String?
   amount          Decimal
   currency        String
@@ -45,6 +55,11 @@ model Transaction {
   // re-run (or AI categorisation) never silently overwrites a
   // categorisation the user chose by hand.
   categorySource String?
+
+  accountId String?
+  // SetNull -- deleting an account must never delete or block deletion of
+  // transaction history (same reasoning as the Category relation above).
+  account   Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
 }
 
 model Account {
@@ -64,6 +79,17 @@ model Account {
   // row-level updatedAt -- set explicitly in the update path, not Prisma's
   // @updatedAt (which would fire on any field edit, e.g. renaming an
   // account, and misleadingly look like a balance refresh).
+  //
+  // Doubles today as the reconciliation baseline timestamp: currentBalance
+  // is the confirmed-accurate figure as of this moment, and transactions
+  // dated on/after it adjust a *displayed* balance on top (see
+  // getDisplayedBalance() in src/lib/accounts.ts, the one place that reads
+  // this field for that purpose). Treated as an implementation detail, not
+  // the long-term model -- if Account ever gains other editable metadata
+  // that shouldn't reset the baseline, split this into a dedicated
+  // `baselineAt` field. That's a one-place change: only
+  // getDisplayedBalance() (via its getBaselineTimestamp() helper) and this
+  // update path would need to point at the new field instead.
   balanceUpdatedAt DateTime @default(now())
 
   // The entire "data-driven inclusion" mechanism: whether an account
@@ -83,6 +109,7 @@ model Account {
   createdAt DateTime @default(now())
 
   monthlyCommitments MonthlyCommitment[]
+  transactions       Transaction[]
 }
 
 model MonthlyCommitment {

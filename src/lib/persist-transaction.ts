@@ -4,10 +4,10 @@ import { matchCategoryForMerchant } from "@/lib/merchant-rules";
 
 export type PersistedTransaction = {
   id: string;
-  gmailMessageId: string;
-  gmailThreadId: string;
-  gmailReceivedAt: string;
-  bank: string;
+  gmailMessageId: string | null;
+  gmailThreadId: string | null;
+  gmailReceivedAt: string | null;
+  bank: string | null;
   merchant: string | null;
   amount: number;
   currency: string;
@@ -18,6 +18,44 @@ export type PersistedTransaction = {
   createdAt: string;
 };
 
+type PersistableRow = {
+  id: string;
+  gmailMessageId: string | null;
+  gmailThreadId: string | null;
+  gmailReceivedAt: Date | null;
+  bank: string | null;
+  merchant: string | null;
+  amount: { toNumber(): number };
+  currency: string;
+  transactionKind: string;
+  direction: string;
+  cardLastFour: string | null;
+  transactionDate: Date;
+  createdAt: Date;
+};
+
+function toPersistedTransaction(row: PersistableRow): PersistedTransaction {
+  return {
+    id: row.id,
+    gmailMessageId: row.gmailMessageId,
+    gmailThreadId: row.gmailThreadId,
+    gmailReceivedAt: row.gmailReceivedAt ? row.gmailReceivedAt.toISOString() : null,
+    bank: row.bank,
+    merchant: row.merchant,
+    amount: row.amount.toNumber(),
+    currency: row.currency,
+    transactionKind: row.transactionKind,
+    direction: row.direction,
+    cardLastFour: row.cardLastFour,
+    transactionDate: row.transactionDate.toISOString().slice(0, 10),
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+// The Gmail-import engine -- used by both Historical Import and Daily
+// Sync, unchanged in behavior. Always auto-matches a category via
+// merchant rules (nobody's looking at a category dropdown during an
+// import), always source: "gmail".
 export async function persistTransaction(
   transaction: Transaction,
   gmail: { messageId: string; threadId: string; receivedAtIso: string | null },
@@ -41,6 +79,7 @@ export async function persistTransaction(
       gmailMessageId: gmail.messageId,
       gmailThreadId: gmail.threadId,
       gmailReceivedAt,
+      source: "gmail",
       bank: transaction.bank,
       merchant: transaction.merchant,
       amount: transaction.amount,
@@ -55,19 +94,48 @@ export async function persistTransaction(
     update: {},
   });
 
-  return {
-    id: row.id,
-    gmailMessageId: row.gmailMessageId,
-    gmailThreadId: row.gmailThreadId,
-    gmailReceivedAt: row.gmailReceivedAt.toISOString(),
-    bank: row.bank,
-    merchant: row.merchant,
-    amount: row.amount.toNumber(),
-    currency: row.currency,
-    transactionKind: row.transactionKind,
-    direction: row.direction,
-    cardLastFour: row.cardLastFour,
-    transactionDate: row.transactionDate.toISOString().slice(0, 10),
-    createdAt: row.createdAt.toISOString(),
-  };
+  return toPersistedTransaction(row);
+}
+
+export type ManualTransactionFields = {
+  merchant: string;
+  amount: number;
+  currency: string;
+  transactionKind: string;
+  direction: string;
+  date: string;
+  accountId: string | null;
+  categoryId: string | null;
+  categorySource: string | null;
+};
+
+// The manual-entry path -- always a plain create (no natural dedupe key to
+// upsert against, unlike Gmail import), source: "manual", no gmail
+// metadata or bank/cardLastFour at all (display prefers the linked
+// Account's name instead -- see formatAccountLabel() in transactions.ts).
+// Category always comes from the caller's explicit choice (including
+// deliberately "Uncategorized"), never auto-matched -- the user is looking
+// at a dropdown right there, so silently overriding it with a merchant
+// rule would be surprising.
+export async function createManualTransaction(
+  fields: ManualTransactionFields,
+): Promise<PersistedTransaction> {
+  const row = await prisma.transaction.create({
+    data: {
+      source: "manual",
+      bank: null,
+      merchant: fields.merchant,
+      amount: fields.amount,
+      currency: fields.currency,
+      transactionKind: fields.transactionKind,
+      direction: fields.direction,
+      cardLastFour: null,
+      transactionDate: new Date(fields.date),
+      accountId: fields.accountId,
+      categoryId: fields.categoryId,
+      categorySource: fields.categorySource,
+    },
+  });
+
+  return toPersistedTransaction(row);
 }
