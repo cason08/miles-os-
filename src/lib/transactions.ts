@@ -192,14 +192,17 @@ function getDateRangeBounds(filters?: TransactionFilters): { gte?: Date; lt?: Da
 // Keyed by account NAME because Account has no bank/card-issuer field of
 // its own today -- fragile if an account is ever renamed, but this is
 // explicitly a temporary query-layer patch, not the long-term model.
-// `cardLastFour: undefined` means "don't constrain by card" (Citibank --
-// only one Citibank account exists, so bank alone disambiguates it);
-// `null` means "must have no card" (OCBC's current account, to exclude
-// any future OCBC card); a string means "must equal exactly."
-type AccountBankMatch = { bank: string; cardLastFour?: string | null };
+// `cardLastFour: undefined` means "don't constrain by card" -- every OCBC
+// or Citibank transaction belongs to the one OCBC/Citibank account
+// regardless of which card or channel moved the money (current-account
+// transfer, debit card, etc.); a string means "must equal exactly," used
+// for the three cards that share a bank with another account (UOB PPV,
+// DBS Altitude, DBS WWMC all need their card digits to disambiguate from
+// each other, and from any bank transaction with no card at all).
+type AccountBankMatch = { bank: string; cardLastFour?: string };
 
 const ACCOUNT_BANK_MATCH: Record<string, AccountBankMatch> = {
-  "OCBC Current Account": { bank: "OCBC", cardLastFour: null },
+  "OCBC Current Account": { bank: "OCBC" },
   "UOB Preferred Platinum Visa (PPV)": { bank: "UOB", cardLastFour: "8360" },
   "DBS Altitude": { bank: "DBS", cardLastFour: "6106" },
   "DBS Woman's World Mastercard (WWMC)": { bank: "DBS", cardLastFour: "3977" },
@@ -208,6 +211,13 @@ const ACCOUNT_BANK_MATCH: Record<string, AccountBankMatch> = {
   // bank sends these, so only manually-entered transactions explicitly
   // assigned via accountId can ever belong to them.
 };
+
+function bankMatchWhere(rule: AccountBankMatch): Prisma.TransactionWhereInput {
+  return {
+    bank: rule.bank,
+    ...(rule.cardLastFour !== undefined ? { cardLastFour: rule.cardLastFour } : {}),
+  };
+}
 
 // Resolves the Account filter to whichever transactions should count as
 // "belonging" to it: anything explicitly linked via accountId (manual
@@ -222,15 +232,30 @@ async function resolveAccountFilterWhere(accountId: string): Promise<Prisma.Tran
   const bankMatch = ACCOUNT_BANK_MATCH[account.name];
   if (!bankMatch) return { accountId: account.id };
 
-  return {
-    OR: [
-      { accountId: account.id },
-      {
-        bank: bankMatch.bank,
-        ...(bankMatch.cardLastFour !== undefined ? { cardLastFour: bankMatch.cardLastFour } : {}),
-      },
-    ],
-  };
+  return { OR: [{ accountId: account.id }, bankMatchWhere(bankMatch)] };
+}
+
+// "Unassigned" means accountId IS NULL *and* the transaction doesn't
+// resolve to any of the bank-mapped accounts above either -- otherwise
+// every not-yet-assigned Gmail import (i.e. nearly everything, since
+// accountId backfill is explicitly out of scope) would show up here,
+// including transactions that plainly belong to a real, known account.
+//
+// Deliberately NOT `NOT: { OR: [...bank rules] }` -- for a row where bank
+// IS NULL, every `bank: "OCBC"`-style comparison evaluates to SQL's NULL
+// (unknown), not false; OR-ing several NULLs together stays NULL, and
+// NOT(NULL) is still NULL, not true. A WHERE clause treats NULL as "don't
+// include this row," so that version silently excluded every transaction
+// with no bank at all (manual entries, or the "no plain/html body" import
+// failures) -- the exact opposite of what "doesn't match any account"
+// should mean for a NULL bank. Resolving the matched IDs first and
+// filtering by `id: notIn` sidesteps three-valued logic entirely.
+async function unassignedWhere(): Promise<Prisma.TransactionWhereInput> {
+  const bankMatched = await prisma.transaction.findMany({
+    where: { OR: Object.values(ACCOUNT_BANK_MATCH).map(bankMatchWhere) },
+    select: { id: true },
+  });
+  return { accountId: null, id: { notIn: bankMatched.map((row) => row.id) } };
 }
 
 // Each filter dimension is pushed as its own item in a top-level AND array
@@ -255,7 +280,7 @@ async function buildWhereClause(filters?: TransactionFilters): Promise<Prisma.Tr
   }
 
   if (filters.accountId === "unassigned") {
-    conditions.push({ accountId: null });
+    conditions.push(await unassignedWhere());
   } else if (filters.accountId && filters.accountId !== "all") {
     conditions.push(await resolveAccountFilterWhere(filters.accountId));
   }
