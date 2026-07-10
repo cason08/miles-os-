@@ -1,3 +1,4 @@
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { createManualTransaction } from "@/lib/persist-transaction";
 
@@ -31,6 +32,46 @@ export type TransactionInput = {
   accountId: string | null;
   categoryId: string | null;
   date: string;
+};
+
+export type TransactionDateRange =
+  | "today"
+  | "yesterday"
+  | "last7"
+  | "thisMonth"
+  | "lastMonth"
+  | "thisYear"
+  | "custom";
+
+export type TransactionFilters = {
+  /** Matched against merchant, account name, and category name (case-insensitive). */
+  search?: string;
+  /** A real Account id, "unassigned", or omitted for all accounts. */
+  accountId?: string;
+  /** A real Category id, "uncategorized", or omitted for all categories. */
+  categoryId?: string;
+  range?: TransactionDateRange;
+  /** ISO YYYY-MM-DD, only used when range === "custom". */
+  customFrom?: string;
+  customTo?: string;
+  /** "expense" -> direction "out", "income" -> direction "in", omitted for all. */
+  type?: "expense" | "income";
+  /** "gmail" (displayed as "Imported") or "manual", omitted for all. */
+  source?: "gmail" | "manual";
+};
+
+export type TransactionSort =
+  | "newest"
+  | "oldest"
+  | "amountDesc"
+  | "amountAsc"
+  | "merchantAsc"
+  | "merchantDesc";
+
+export type GetTransactionsOptions = {
+  limit?: number;
+  filters?: TransactionFilters;
+  sort?: TransactionSort;
 };
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -75,10 +116,137 @@ function formatAccountLabel(
   return cardLastFour ? `${name} •••• ${cardLastFour}` : name;
 }
 
-export async function getTransactions(limit?: number): Promise<TransactionRowData[]> {
+// Constructed via Date.UTC, not `new Date(y, m, d)` -- the latter builds a
+// LOCAL midnight instant, which on a server running east of UTC (this one
+// runs in Asia/Singapore, UTC+8) lands on the *previous* UTC calendar day
+// (e.g. local midnight July 10 SGT = 16:00 UTC July 9). Since
+// transactionDate is a bare @db.Date column with no time-of-day, its
+// values are compared against the UTC calendar date of whatever bound is
+// supplied -- a locally-constructed bound would silently filter for the
+// wrong day. Date.UTC(y, m, d) instead pins exactly the intended calendar
+// date, matching how transactionDate is already written elsewhere
+// (new Date("YYYY-MM-DD"), which the spec parses as UTC midnight).
+function startOfUtcDay(date: Date): Date {
+  return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+}
+
+function addUtcDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setUTCDate(result.getUTCDate() + days);
+  return result;
+}
+
+// Computes the [gte, lt) bounds for each named range against
+// transactionDate (date-only) -- "Last 7 Days" is inclusive of today (a
+// 7-day window, not 6). Returns {} (no bound) for an unset/unknown range,
+// which getTransactions() treats as "All Time."
+function getDateRangeBounds(filters?: TransactionFilters): { gte?: Date; lt?: Date } {
+  const todayStart = startOfUtcDay(new Date());
+
+  switch (filters?.range) {
+    case "today":
+      return { gte: todayStart, lt: addUtcDays(todayStart, 1) };
+    case "yesterday":
+      return { gte: addUtcDays(todayStart, -1), lt: todayStart };
+    case "last7":
+      return { gte: addUtcDays(todayStart, -6), lt: addUtcDays(todayStart, 1) };
+    case "thisMonth": {
+      const now = new Date();
+      return {
+        gte: new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1)),
+        lt: new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1)),
+      };
+    }
+    case "lastMonth": {
+      const now = new Date();
+      return {
+        gte: new Date(Date.UTC(now.getFullYear(), now.getMonth() - 1, 1)),
+        lt: new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1)),
+      };
+    }
+    case "thisYear": {
+      const now = new Date();
+      return {
+        gte: new Date(Date.UTC(now.getFullYear(), 0, 1)),
+        lt: new Date(Date.UTC(now.getFullYear() + 1, 0, 1)),
+      };
+    }
+    case "custom":
+      return {
+        gte: filters?.customFrom ? new Date(filters.customFrom) : undefined,
+        lt: filters?.customTo ? addUtcDays(new Date(filters.customTo), 1) : undefined,
+      };
+    default:
+      return {};
+  }
+}
+
+function buildWhereClause(filters?: TransactionFilters): Prisma.TransactionWhereInput {
+  if (!filters) return {};
+  const where: Prisma.TransactionWhereInput = {};
+
+  const search = filters.search?.trim();
+  if (search) {
+    where.OR = [
+      { merchant: { contains: search, mode: "insensitive" } },
+      { account: { name: { contains: search, mode: "insensitive" } } },
+      { category: { name: { contains: search, mode: "insensitive" } } },
+    ];
+  }
+
+  if (filters.accountId === "unassigned") {
+    where.accountId = null;
+  } else if (filters.accountId && filters.accountId !== "all") {
+    where.accountId = filters.accountId;
+  }
+
+  if (filters.categoryId === "uncategorized") {
+    where.categoryId = null;
+  } else if (filters.categoryId && filters.categoryId !== "all") {
+    where.categoryId = filters.categoryId;
+  }
+
+  const { gte, lt } = getDateRangeBounds(filters);
+  if (gte || lt) {
+    where.transactionDate = { ...(gte ? { gte } : {}), ...(lt ? { lt } : {}) };
+  }
+
+  if (filters.type === "expense") where.direction = "out";
+  else if (filters.type === "income") where.direction = "in";
+
+  if (filters.source === "gmail" || filters.source === "manual") {
+    where.source = filters.source;
+  }
+
+  return where;
+}
+
+function buildOrderBy(sort?: TransactionSort): Prisma.TransactionOrderByWithRelationInput[] {
+  switch (sort) {
+    case "oldest":
+      return [{ transactionDate: "asc" }, { createdAt: "asc" }];
+    case "amountDesc":
+      return [{ amount: "desc" }];
+    case "amountAsc":
+      return [{ amount: "asc" }];
+    case "merchantAsc":
+      return [{ merchant: "asc" }];
+    case "merchantDesc":
+      return [{ merchant: "desc" }];
+    case "newest":
+    default:
+      return [{ transactionDate: "desc" }, { createdAt: "desc" }];
+  }
+}
+
+export async function getTransactions(
+  options: GetTransactionsOptions = {},
+): Promise<TransactionRowData[]> {
+  const { limit, filters, sort } = options;
   const rows = await prisma.transaction.findMany({
+    where: buildWhereClause(filters),
     include: { category: true, account: true },
-    orderBy: [{ transactionDate: "desc" }, { createdAt: "desc" }],
+    orderBy: buildOrderBy(sort),
     ...(limit !== undefined ? { take: limit } : {}),
   });
 
@@ -98,6 +266,10 @@ export async function getTransactions(limit?: number): Promise<TransactionRowDat
     transactionDateRaw: row.transactionDate.toISOString().slice(0, 10),
     source: row.source === "manual" ? "manual" : "imported",
   }));
+}
+
+export async function getTransactionCount(): Promise<number> {
+  return prisma.transaction.count();
 }
 
 // Sets categorySource to "manual" whenever a category is assigned this way

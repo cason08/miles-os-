@@ -14,6 +14,7 @@ export function TransactionList({
   categories,
   editable = false,
   accountOptions = [],
+  emptyMessage,
 }: {
   transactions: TransactionRowData[];
   categories: CategoryData[];
@@ -21,6 +22,10 @@ export function TransactionList({
    * on Home's read-only Recent Transactions preview. */
   editable?: boolean;
   accountOptions?: { id: string; name: string }[];
+  /** Overrides the default empty-state copy -- used by /transactions to
+   * distinguish "no transactions match your filters" from "no transactions
+   * at all." */
+  emptyMessage?: string;
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -29,7 +34,8 @@ export function TransactionList({
       {transactions.length === 0 ? (
         <Card>
           <p className="text-sm text-muted-foreground">
-            No transactions yet — once Gmail sync captures a bank email, it&apos;ll show up here.
+            {emptyMessage ??
+              "No transactions yet — once Gmail sync captures a bank email, it'll show up here."}
           </p>
         </Card>
       ) : (

@@ -75,14 +75,18 @@ async function getDisplayedBalance(account: {
   balanceUpdatedAt: Date;
 }): Promise<number> {
   const baselineTimestamp = getBaselineTimestamp(account);
-  // Truncated to the baseline's calendar day, not a precise datetime
-  // comparison -- transactionDate is date-only, so a transaction dated the
-  // same day the baseline was set should count as "on or after," not be
-  // excluded by a stray time-of-day mismatch.
+  // Truncated to the baseline's calendar day via Date.UTC, not
+  // `new Date(y, m, d)` -- transactionDate is a bare @db.Date column (no
+  // time-of-day), compared against the UTC calendar date of whatever bound
+  // is supplied. The local Date constructor builds a local-midnight
+  // instant, which on a server east of UTC (this one runs in
+  // Asia/Singapore, UTC+8) lands on the *previous* UTC calendar day --
+  // silently relaxing this bound backward by a day and letting the day
+  // before the real baseline count as "on or after" it. Date.UTC(y, m, d)
+  // pins the intended calendar date exactly, matching how transactionDate
+  // is written elsewhere (new Date("YYYY-MM-DD"), parsed as UTC midnight).
   const baselineDate = new Date(
-    baselineTimestamp.getFullYear(),
-    baselineTimestamp.getMonth(),
-    baselineTimestamp.getDate(),
+    Date.UTC(baselineTimestamp.getFullYear(), baselineTimestamp.getMonth(), baselineTimestamp.getDate()),
   );
 
   const rows = await prisma.transaction.groupBy({

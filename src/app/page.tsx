@@ -129,7 +129,7 @@ export default async function HomePage() {
 
   const firstName = (session.user.name ?? session.user.email ?? "there").split(" ")[0];
   const greeting = getGreeting(new Date().getHours());
-  const recentTransactions = await getTransactions(10);
+  const recentTransactions = await getTransactions({ limit: 10 });
   const categories = await getCategories();
   const spentThisMonth = await getSpentThisMonth();
   const availableCash = await getAvailableCash();

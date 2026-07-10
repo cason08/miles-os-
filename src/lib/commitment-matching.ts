@@ -10,22 +10,30 @@ type CommitmentWithAccount = MonthlyCommitment & { account: Account };
 type MatchRule = (commitment: CommitmentWithAccount, transaction: Transaction) => boolean;
 
 function lastDayOfMonth(year: number, monthIndex: number): number {
-  return new Date(year, monthIndex + 1, 0).getDate();
+  return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
 }
 
 // Clamps expectedDayOfMonth to the target month's real length (e.g. day 31
-// in February) before applying the ± tolerance window.
+// in February) before applying the ± tolerance window. Built via Date.UTC,
+// not `new Date(y, m, d)` -- transaction.transactionDate (compared against
+// this window in dateWindowRule below) always comes back from Prisma as
+// exact UTC midnight for its calendar date (it's a bare @db.Date column,
+// no time-of-day). A locally-constructed `end` boundary is a local
+// midnight instant, which on a server east of UTC (this one runs in
+// Asia/Singapore, UTC+8) lands 8 hours before the real UTC midnight of
+// that same calendar day -- silently excluding a transaction dated
+// exactly on the window's last valid day.
 function expectedDateWindow(
   commitment: CommitmentWithAccount,
   year: number,
   monthIndex: number,
 ): { start: Date; end: Date } {
   const day = Math.min(commitment.expectedDayOfMonth, lastDayOfMonth(year, monthIndex));
-  const expected = new Date(year, monthIndex, day);
+  const expected = new Date(Date.UTC(year, monthIndex, day));
   const start = new Date(expected);
-  start.setDate(start.getDate() - commitment.dayTolerance);
+  start.setUTCDate(start.getUTCDate() - commitment.dayTolerance);
   const end = new Date(expected);
-  end.setDate(end.getDate() + commitment.dayTolerance);
+  end.setUTCDate(end.getUTCDate() + commitment.dayTolerance);
   return { start, end };
 }
 

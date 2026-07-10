@@ -21,8 +21,12 @@ export async function getCategoryBudgetStatuses(): Promise<CategoryBudgetStatus[
   if (categories.length === 0) return [];
 
   const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  // Date.UTC, not `new Date(y, m, d)` -- see the identical comment in
+  // getSpentThisMonth() (spent-this-month.ts). A locally-constructed bound
+  // silently shifts this month boundary back by a day on a server east of
+  // UTC (this one runs in Asia/Singapore, UTC+8).
+  const start = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+  const end = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
 
   const spendByCategory = await prisma.transaction.groupBy({
     by: ["categoryId"],
