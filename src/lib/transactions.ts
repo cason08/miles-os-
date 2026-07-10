@@ -181,44 +181,104 @@ function getDateRangeBounds(filters?: TransactionFilters): { gte?: Date; lt?: Da
   }
 }
 
-function buildWhereClause(filters?: TransactionFilters): Prisma.TransactionWhereInput {
+// v1 stopgap for the Account filter: Gmail-imported transactions don't
+// carry accountId yet (see the recommendation at the bottom of this file),
+// only `bank` and, for card transactions, `cardLastFour`. Filtering "by
+// account" therefore has to fall back to the same bank/card signal a
+// human already uses to recognize which account a transaction belongs to
+// -- otherwise selecting e.g. "UOB Preferred Platinum Visa" would return
+// nothing, since no imported transaction has that accountId set.
+//
+// Keyed by account NAME because Account has no bank/card-issuer field of
+// its own today -- fragile if an account is ever renamed, but this is
+// explicitly a temporary query-layer patch, not the long-term model.
+// `cardLastFour: undefined` means "don't constrain by card" (Citibank --
+// only one Citibank account exists, so bank alone disambiguates it);
+// `null` means "must have no card" (OCBC's current account, to exclude
+// any future OCBC card); a string means "must equal exactly."
+type AccountBankMatch = { bank: string; cardLastFour?: string | null };
+
+const ACCOUNT_BANK_MATCH: Record<string, AccountBankMatch> = {
+  "OCBC Current Account": { bank: "OCBC", cardLastFour: null },
+  "UOB Preferred Platinum Visa (PPV)": { bank: "UOB", cardLastFour: "8360" },
+  "DBS Altitude": { bank: "DBS", cardLastFour: "6106" },
+  "DBS Woman's World Mastercard (WWMC)": { bank: "DBS", cardLastFour: "3977" },
+  "Citibank Rewards": { bank: "Citibank" },
+  // Mari Invest SavePlus / Mari Invest Income intentionally absent -- no
+  // bank sends these, so only manually-entered transactions explicitly
+  // assigned via accountId can ever belong to them.
+};
+
+// Resolves the Account filter to whichever transactions should count as
+// "belonging" to it: anything explicitly linked via accountId (manual
+// entries, or a Gmail transaction someone has since assigned via Edit)
+// OR'd with the bank/card heuristic above, when one exists for that
+// account. Falls back to accountId alone if the account has no bank
+// mapping (Mari Invest) or no longer exists.
+async function resolveAccountFilterWhere(accountId: string): Promise<Prisma.TransactionWhereInput> {
+  const account = await prisma.account.findUnique({ where: { id: accountId } });
+  if (!account) return { accountId };
+
+  const bankMatch = ACCOUNT_BANK_MATCH[account.name];
+  if (!bankMatch) return { accountId: account.id };
+
+  return {
+    OR: [
+      { accountId: account.id },
+      {
+        bank: bankMatch.bank,
+        ...(bankMatch.cardLastFour !== undefined ? { cardLastFour: bankMatch.cardLastFour } : {}),
+      },
+    ],
+  };
+}
+
+// Each filter dimension is pushed as its own item in a top-level AND array
+// rather than merged into one flat object -- both the free-text search and
+// the account-filter resolution can independently need their own OR
+// clause (search: merchant/account/category; account: accountId-or-bank-
+// match), and merging two OR clauses into a single object would silently
+// clobber one with the other instead of requiring both.
+async function buildWhereClause(filters?: TransactionFilters): Promise<Prisma.TransactionWhereInput> {
   if (!filters) return {};
-  const where: Prisma.TransactionWhereInput = {};
+  const conditions: Prisma.TransactionWhereInput[] = [];
 
   const search = filters.search?.trim();
   if (search) {
-    where.OR = [
-      { merchant: { contains: search, mode: "insensitive" } },
-      { account: { name: { contains: search, mode: "insensitive" } } },
-      { category: { name: { contains: search, mode: "insensitive" } } },
-    ];
+    conditions.push({
+      OR: [
+        { merchant: { contains: search, mode: "insensitive" } },
+        { account: { name: { contains: search, mode: "insensitive" } } },
+        { category: { name: { contains: search, mode: "insensitive" } } },
+      ],
+    });
   }
 
   if (filters.accountId === "unassigned") {
-    where.accountId = null;
+    conditions.push({ accountId: null });
   } else if (filters.accountId && filters.accountId !== "all") {
-    where.accountId = filters.accountId;
+    conditions.push(await resolveAccountFilterWhere(filters.accountId));
   }
 
   if (filters.categoryId === "uncategorized") {
-    where.categoryId = null;
+    conditions.push({ categoryId: null });
   } else if (filters.categoryId && filters.categoryId !== "all") {
-    where.categoryId = filters.categoryId;
+    conditions.push({ categoryId: filters.categoryId });
   }
 
   const { gte, lt } = getDateRangeBounds(filters);
   if (gte || lt) {
-    where.transactionDate = { ...(gte ? { gte } : {}), ...(lt ? { lt } : {}) };
+    conditions.push({ transactionDate: { ...(gte ? { gte } : {}), ...(lt ? { lt } : {}) } });
   }
 
-  if (filters.type === "expense") where.direction = "out";
-  else if (filters.type === "income") where.direction = "in";
+  if (filters.type === "expense") conditions.push({ direction: "out" });
+  else if (filters.type === "income") conditions.push({ direction: "in" });
 
   if (filters.source === "gmail" || filters.source === "manual") {
-    where.source = filters.source;
+    conditions.push({ source: filters.source });
   }
 
-  return where;
+  return conditions.length > 0 ? { AND: conditions } : {};
 }
 
 function buildOrderBy(sort?: TransactionSort): Prisma.TransactionOrderByWithRelationInput[] {
@@ -244,7 +304,7 @@ export async function getTransactions(
 ): Promise<TransactionRowData[]> {
   const { limit, filters, sort } = options;
   const rows = await prisma.transaction.findMany({
-    where: buildWhereClause(filters),
+    where: await buildWhereClause(filters),
     include: { category: true, account: true },
     orderBy: buildOrderBy(sort),
     ...(limit !== undefined ? { take: limit } : {}),
@@ -337,3 +397,36 @@ export async function updateTransaction(id: string, input: TransactionInput): Pr
 export async function deleteTransaction(id: string): Promise<void> {
   await prisma.transaction.delete({ where: { id } });
 }
+
+// --- Recommendation (not implemented): resolving accountId at import time ---
+//
+// ACCOUNT_BANK_MATCH above is a query-layer stopgap: it lets the Account
+// filter work today without touching the schema or backfilling data, but
+// it has real costs -- it's keyed by account name (silently breaks if an
+// account is renamed), it lives in a second place separate from the
+// Account row itself, and every other feature that could benefit from
+// knowing "which account does this transaction belong to" (the baseline
+// balance calculation, Monthly Commitments matching, any future reporting
+// by account) still can't see it, because it only exists inside this one
+// filter's query.
+//
+// The more durable fix: have persistTransaction() (persist-transaction.ts)
+// resolve and persist a real accountId for every newly-imported Gmail
+// transaction, the same way it already auto-resolves categoryId via
+// matchCategoryForMerchant(). Concretely:
+//   1. Populate Account.cardLastFour for the credit-card accounts (the
+//      field already exists on the schema for exactly this purpose --
+//      it's just unpopulated today).
+//   2. Add a small resolver, e.g. matchAccountForTransaction(bank,
+//      cardLastFour), mirroring ACCOUNT_BANK_MATCH's logic but querying
+//      Account rows directly (bank derived from name or a new field,
+//      cardLastFour compared against Account.cardLastFour) instead of a
+//      hardcoded table -- self-updating as accounts are added/renamed.
+//   3. Call it from persistTransaction()'s create path, exactly like the
+//      existing categoryId auto-match.
+// That would make ACCOUNT_BANK_MATCH (and the "unassigned" filter option)
+// obsolete for anything imported after the change, while this query-layer
+// fallback keeps working unmodified for older, not-yet-assigned rows in
+// the meantime. Retroactively backfilling accountId on existing imported
+// transactions would be a separate, deliberate decision (a one-off
+// script, not something to do silently) -- not proposed here.
