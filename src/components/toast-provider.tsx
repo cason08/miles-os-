@@ -1,7 +1,7 @@
 "use client";
 
 import { Toast } from "@base-ui/react/toast";
-import { CheckCircle2, Info, X, XCircle } from "lucide-react";
+import { CheckCircle2, Info, Trash2, X, XCircle } from "lucide-react";
 import { toastManager } from "@/lib/toast";
 
 // DESIGN_SYSTEM_V2.md §18 -- one toast region, four kinds distinguished by
@@ -14,6 +14,7 @@ const TOAST_ICONS = {
   success: CheckCircle2,
   error: XCircle,
   info: Info,
+  undo: Trash2,
 } as const;
 
 function ToastList() {
@@ -28,10 +29,10 @@ function ToastList() {
             <Toast.Root
               key={item.id}
               toast={item}
-              className="relative flex items-start gap-3 rounded-xl border border-l-2 border-border/70 bg-popover bg-[image:var(--gradient-card)] p-4 pr-8 text-popover-foreground shadow-md transition-all duration-300 data-[ending-style]:translate-y-1 data-[starting-style]:translate-y-1 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 data-[ending-style]:duration-150 data-[type=error]:border-l-destructive data-[type=info]:border-l-primary data-[type=success]:border-l-success"
+              className="relative flex items-start gap-3 rounded-xl border border-l-2 border-border/70 bg-popover bg-[image:var(--gradient-card)] p-4 pr-8 text-popover-foreground shadow-md transition-all duration-300 data-[ending-style]:translate-y-1 data-[starting-style]:translate-y-1 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 data-[ending-style]:duration-150 data-[type=error]:border-l-destructive data-[type=info]:border-l-primary data-[type=success]:border-l-success data-[type=undo]:border-l-muted-foreground"
             >
               <Icon
-                className="mt-0.5 size-4 shrink-0 data-[type=error]:text-destructive data-[type=info]:text-primary data-[type=success]:text-success"
+                className="mt-0.5 size-4 shrink-0 data-[type=error]:text-destructive data-[type=info]:text-primary data-[type=success]:text-success data-[type=undo]:text-muted-foreground"
                 data-type={item.type}
                 strokeWidth={1.75}
               />

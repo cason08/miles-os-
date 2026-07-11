@@ -21,4 +21,22 @@ export const toast = {
   info(title: string, description?: string) {
     toastManager.add({ title, description, type: "info" });
   },
+  // DESIGN_SYSTEM_V2.md §18 -- exactly 5s, matching the Gmail-style undo
+  // window. `onUndo` runs the caller's rollback; closing the toast here
+  // (rather than waiting for its own timeout) gives immediate feedback
+  // that the undo was registered.
+  undo(title: string, onUndo: () => void, description?: string) {
+    const id = toastManager.add({
+      title,
+      description,
+      type: "undo",
+      timeout: 5000,
+      actionProps: {
+        onClick: () => {
+          onUndo();
+          toastManager.close(id);
+        },
+      },
+    });
+  },
 };

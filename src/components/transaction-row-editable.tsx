@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { deleteTransactionAction } from "@/app/transactions/actions";
 import { TransactionRow } from "@/components/ui/transaction-row";
 import { TransactionCategoryPicker } from "@/components/transaction-category-picker";
 import { TransactionRowActions } from "@/components/transaction-row-actions";
 import { TransactionForm } from "@/components/transaction-form";
+import { toast } from "@/lib/toast";
 import type { TransactionRowData } from "@/lib/transactions";
 
 // Per-row client wrapper: owns only this row's "am I being edited" state,
@@ -20,6 +22,33 @@ export function TransactionRowEditable({
   accountOptions: { id: string; name: string }[];
 }) {
   const [editing, setEditing] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(false);
+  const deleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleDelete() {
+    setPendingDelete(true);
+    // The actual server delete is delayed behind the undo window -- if the
+    // user never clicks Undo, this fires and the row's removal becomes
+    // permanent. Deliberately not cancelled on unmount: navigating away
+    // during the window shouldn't cancel a delete the user already
+    // committed to, matching Gmail's own behaviour.
+    deleteTimer.current = setTimeout(async () => {
+      const result = await deleteTransactionAction(transaction.id);
+      if ("error" in result) {
+        toast.error("Couldn't delete transaction", result.error);
+        setPendingDelete(false);
+      }
+    }, 5000);
+
+    toast.undo("Transaction deleted", () => {
+      if (deleteTimer.current) clearTimeout(deleteTimer.current);
+      setPendingDelete(false);
+    });
+  }
+
+  if (pendingDelete) {
+    return null;
+  }
 
   if (editing) {
     return (
@@ -58,7 +87,7 @@ export function TransactionRowEditable({
           categories={categories}
         />
       }
-      actions={<TransactionRowActions transactionId={transaction.id} onEdit={() => setEditing(true)} />}
+      actions={<TransactionRowActions onEdit={() => setEditing(true)} onDelete={handleDelete} />}
     />
   );
 }

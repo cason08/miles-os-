@@ -1,65 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { deleteTransactionAction } from "@/app/transactions/actions";
 import { Button } from "@/components/ui/button";
 
+// Gmail-style delete: no confirmation dialog -- the parent
+// (TransactionRowEditable) hides the row immediately and shows a 5s Undo
+// toast instead, per DESIGN_SYSTEM_V2.md's "Delete" interaction guidance.
 export function TransactionRowActions({
-  transactionId,
   onEdit,
+  onDelete,
 }: {
-  transactionId: string;
   onEdit: () => void;
+  onDelete: () => void;
 }) {
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleDelete() {
-    setDeleting(true);
-    setError(null);
-    const result = await deleteTransactionAction(transactionId);
-    setDeleting(false);
-    if ("error" in result) {
-      setError(result.error);
-      return;
-    }
-    setConfirmingDelete(false);
-  }
-
-  if (confirmingDelete) {
-    return (
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">Delete?</span>
-        <Button
-          type="button"
-          variant="destructive"
-          size="sm"
-          onClick={handleDelete}
-          disabled={deleting}
-        >
-          {deleting ? "Deleting..." : "Yes"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setConfirmingDelete(false)}
-          disabled={deleting}
-        >
-          Cancel
-        </Button>
-        {error && <span className="text-xs text-destructive">{error}</span>}
-      </div>
-    );
-  }
-
   return (
     <div className="flex items-center gap-2">
       <Button type="button" variant="ghost" size="sm" onClick={onEdit}>
         Edit
       </Button>
-      <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmingDelete(true)}>
+      <Button type="button" variant="ghost" size="sm" onClick={onDelete}>
         Delete
       </Button>
     </div>
