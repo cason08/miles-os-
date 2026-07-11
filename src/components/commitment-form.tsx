@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { COMMITMENT_TYPE_LABELS, type CommitmentInput } from "@/lib/commitment-types";
 import { fieldClass as baseFieldClass } from "@/lib/ui";
 import { toast } from "@/lib/toast";
+import { useEscapeKey } from "@/lib/keyboard-shortcuts";
 
 const fieldClass = `${baseFieldClass} w-full`;
 
@@ -36,6 +37,8 @@ export function CommitmentForm({
   const [accountId, setAccountId] = useState(initial?.accountId ?? accountOptions[0]?.id ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEscapeKey(onCancel);
 
   async function handleSubmit() {
     const input: CommitmentInput = {

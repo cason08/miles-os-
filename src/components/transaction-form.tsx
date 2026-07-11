@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import type { TransactionInput } from "@/lib/transactions";
 import { fieldClass as baseFieldClass } from "@/lib/ui";
 import { toast } from "@/lib/toast";
+import { useEscapeKey } from "@/lib/keyboard-shortcuts";
 
 const fieldClass = `${baseFieldClass} w-full`;
 
@@ -35,6 +36,8 @@ export function TransactionForm({
   const [date, setDate] = useState(initial?.date ?? today());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEscapeKey(onCancel);
 
   async function handleSubmit() {
     const input: TransactionInput = {

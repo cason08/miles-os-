@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { fieldClass } from "@/lib/ui";
+import { useKeyboardShortcut } from "@/lib/keyboard-shortcuts";
 
 const DATE_RANGE_OPTIONS = [
   { value: "all", label: "All Time" },
@@ -37,6 +38,10 @@ export function TransactionFilterToolbar({
   const [, startTransition] = useTransition();
 
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // DESIGN_SYSTEM_V2.md keyboard shortcuts -- `/` focuses Search.
+  useKeyboardShortcut("/", () => searchRef.current?.focus());
 
   function updateParam(key: string, value: string, defaultValue = "all") {
     const next = new URLSearchParams(searchParams.toString());
@@ -68,8 +73,9 @@ export function TransactionFilterToolbar({
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <input
+          ref={searchRef}
           className={`${fieldClass} min-w-[12rem] flex-1`}
-          placeholder="Search merchant, account, category..."
+          placeholder="Search merchant, account, category... (/)"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
