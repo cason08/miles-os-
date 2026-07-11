@@ -51,6 +51,11 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  /* DESIGN_SYSTEM_V2.md §4 -- defining these here (not just in :root/.dark)
+     is what makes Tailwind generate shadow-sm/md/lg utilities from them. */
+  --shadow-sm: var(--shadow-sm-value);
+  --shadow-md: var(--shadow-md-value);
+  --shadow-lg: var(--shadow-lg-value);
 }
 
 :root {
@@ -83,6 +88,12 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.875rem;
+  /* DESIGN_SYSTEM_V2.md §4/§6 -- light mode leans on shadow more than the
+     card gradient, since a lighter-on-white gradient reads as nothing. */
+  --shadow-sm-value: 0 1px 2px 0 oklch(0 0 0 / 0.06);
+  --shadow-md-value: 0 4px 12px -2px oklch(0 0 0 / 0.10);
+  --shadow-lg-value: 0 12px 28px -6px oklch(0 0 0 / 0.14);
+  --gradient-card: var(--card);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -117,6 +128,20 @@
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.65 0.19 264 / 50%);
+  /* DESIGN_SYSTEM_V2.md §4 -- a soft dark shadow plus an inset top
+     highlight, which is what actually reads as "raised" on a near-black
+     canvas (a plain dark-on-dark shadow alone reads as murk, not depth). */
+  --shadow-sm-value: 0 1px 2px 0 oklch(0 0 0 / 0.20);
+  --shadow-md-value: 0 4px 12px -2px oklch(0 0 0 / 0.28), 0 1px 0 0 oklch(1 0 0 / 0.04) inset;
+  --shadow-lg-value: 0 12px 28px -6px oklch(0 0 0 / 0.32), 0 1px 0 0 oklch(1 0 0 / 0.06) inset;
+  /* DESIGN_SYSTEM_V2.md §6 -- an almost-imperceptible top-to-bottom fade
+     (card -> 3% lighter -> card), not a visible gradient. If you can
+     consciously see it, the 3% needs to come down, not up. */
+  --gradient-card: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--card), white 3%) 0%,
+    var(--card) 100%
+  );
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -141,5 +166,20 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* DESIGN_SYSTEM_V2.md §14 -- a blanket safety net so every transition and
+   animation added by this milestone (and any future one) automatically
+   respects prefers-reduced-motion, rather than depending on every
+   component remembering a motion-reduce: variant individually. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
