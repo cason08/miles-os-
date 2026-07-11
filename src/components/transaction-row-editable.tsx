@@ -7,6 +7,7 @@ import { TransactionCategoryPicker } from "@/components/transaction-category-pic
 import { TransactionRowActions } from "@/components/transaction-row-actions";
 import { TransactionForm } from "@/components/transaction-form";
 import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
 import type { TransactionRowData } from "@/lib/transactions";
 
 // Per-row client wrapper: owns only this row's "am I being edited" state,
@@ -22,11 +23,11 @@ export function TransactionRowEditable({
   accountOptions: { id: string; name: string }[];
 }) {
   const [editing, setEditing] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const deleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function handleDelete() {
-    setPendingDelete(true);
+    setCollapsed(true);
     // The actual server delete is delayed behind the undo window -- if the
     // user never clicks Undo, this fires and the row's removal becomes
     // permanent. Deliberately not cancelled on unmount: navigating away
@@ -36,58 +37,65 @@ export function TransactionRowEditable({
       const result = await deleteTransactionAction(transaction.id);
       if ("error" in result) {
         toast.error("Couldn't delete transaction", result.error);
-        setPendingDelete(false);
+        setCollapsed(false);
       }
     }, 5000);
 
     toast.undo("Transaction deleted", () => {
       if (deleteTimer.current) clearTimeout(deleteTimer.current);
-      setPendingDelete(false);
+      setCollapsed(false);
     });
   }
 
-  if (pendingDelete) {
-    return null;
-  }
-
-  if (editing) {
-    return (
-      <div className="p-4">
-        <TransactionForm
-          accountOptions={accountOptions}
-          categories={categories}
-          initial={{
-            id: transaction.id,
-            merchant: transaction.merchantRaw ?? "",
-            amount: transaction.amountRaw,
-            direction: transaction.direction,
-            accountId: transaction.accountId,
-            categoryId: transaction.categoryId,
-            date: transaction.transactionDateRaw,
-          }}
-          onDone={() => setEditing(false)}
-          onCancel={() => setEditing(false)}
-        />
-      </div>
-    );
-  }
-
   return (
-    <TransactionRow
-      merchant={transaction.merchant}
-      account={transaction.account}
-      amount={transaction.amount}
-      date={transaction.date}
-      source={transaction.source}
-      categoryPicker={
-        <TransactionCategoryPicker
-          transactionId={transaction.id}
-          merchant={transaction.merchant}
-          categoryId={transaction.categoryId}
-          categories={categories}
-        />
-      }
-      actions={<TransactionRowActions onEdit={() => setEditing(true)} onDelete={handleDelete} />}
-    />
+    // Same CSS-grid-rows collapse trick as ui/collapsible.tsx -- grid-rows
+    // animates smoothly to 0fr where height:0 can't be transitioned
+    // directly, and overflow-hidden clips the content as it shrinks.
+    <div
+      className="grid transition-[grid-template-rows] duration-300 ease-out"
+      style={{ gridTemplateRows: collapsed ? "0fr" : "1fr" }}
+    >
+      <div className={cn("overflow-hidden transition-opacity duration-150", collapsed && "opacity-0")}>
+        {editing ? (
+          <div className="p-4">
+            <TransactionForm
+              accountOptions={accountOptions}
+              categories={categories}
+              initial={{
+                id: transaction.id,
+                merchant: transaction.merchantRaw ?? "",
+                amount: transaction.amountRaw,
+                direction: transaction.direction,
+                accountId: transaction.accountId,
+                categoryId: transaction.categoryId,
+                date: transaction.transactionDateRaw,
+              }}
+              onDone={() => setEditing(false)}
+              onCancel={() => setEditing(false)}
+            />
+          </div>
+        ) : (
+          <TransactionRow
+            className="transition-colors duration-150 hover:bg-muted/40"
+            merchant={transaction.merchant}
+            account={transaction.account}
+            amount={transaction.amount}
+            date={transaction.date}
+            source={transaction.source}
+            categoryPicker={
+              <TransactionCategoryPicker
+                transactionId={transaction.id}
+                merchant={transaction.merchant}
+                categoryId={transaction.categoryId}
+                categories={categories}
+              />
+            }
+            actions={
+              <TransactionRowActions onEdit={() => setEditing(true)} onDelete={handleDelete} />
+            }
+          />
+        )}
+      </div>
+    </div>
   );
 }

@@ -63,7 +63,7 @@ export function CategoryRow({
   }
 
   return (
-    <div className="flex items-center justify-between gap-4 p-4">
+    <div className="flex items-center justify-between gap-4 p-4 transition-colors duration-150 hover:bg-muted/40">
       <div className="flex min-w-0 items-center gap-3">
         <span
           className="size-3 shrink-0 rounded-full"

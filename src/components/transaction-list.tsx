@@ -51,6 +51,7 @@ export function TransactionList({
             ) : (
               <TransactionRow
                 key={transaction.id}
+                className="transition-colors duration-150 hover:bg-muted/40"
                 merchant={transaction.merchant}
                 account={transaction.account}
                 amount={transaction.amount}

@@ -65,7 +65,7 @@ export function CommitmentRow({
   }
 
   return (
-    <div className="flex items-center justify-between gap-4 p-4">
+    <div className="flex items-center justify-between gap-4 p-4 transition-colors duration-150 hover:bg-muted/40">
       <div className="flex min-w-0 flex-col gap-0.5">
         <span className="truncate text-sm font-medium">{commitment.name}</span>
         <span className="truncate text-xs text-muted-foreground">
