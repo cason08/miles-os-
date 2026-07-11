@@ -75,7 +75,7 @@ export function TransactionCategoryPicker({
           type="button"
           onClick={handleCreateRule}
           disabled={saving}
-          className="max-w-[12rem] text-right text-[10px] text-primary hover:underline disabled:opacity-60"
+          className="max-w-[12rem] rounded text-right text-[10px] text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60"
         >
           Auto-categorize &quot;{merchant}&quot; as {selectedCategory.name} in future
         </button>

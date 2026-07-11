@@ -23,7 +23,7 @@ function Collapsible({
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
-        className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-200 ease-out hover:text-foreground"
+        className="inline-flex w-fit items-center gap-1.5 rounded-md text-sm text-muted-foreground outline-none transition-colors duration-200 ease-out hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         <ChevronDown
           className={cn("size-4 transition-transform duration-200 ease-out", open && "rotate-180")}

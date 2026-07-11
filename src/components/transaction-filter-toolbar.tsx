@@ -159,7 +159,7 @@ export function TransactionFilterToolbar({
               setSearch("");
               startTransition(() => router.replace(pathname, { scroll: false }));
             }}
-            className="text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            className="rounded text-sm text-muted-foreground underline-offset-2 outline-none hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring/50"
           >
             Clear filters
           </button>

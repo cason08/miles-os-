@@ -36,13 +36,15 @@ export function SyncGmailControl({ lastSyncedLabel }: { lastSyncedLabel: string 
 
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-xs text-muted-foreground">Last sync: {lastSyncedLabel}</span>
+      <span className="hidden text-xs text-muted-foreground sm:inline">
+        Last sync: {lastSyncedLabel}
+      </span>
       <button
         type="button"
         onClick={handleSync}
         disabled={pending}
         aria-label="Sync Gmail now"
-        className="cursor-pointer border-none bg-transparent p-0 text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground disabled:cursor-default"
+        className="-m-2 flex cursor-pointer items-center justify-center rounded-md border-none bg-transparent p-2 text-muted-foreground outline-none transition-colors duration-150 ease-out hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-default"
       >
         <RefreshCw className={cn("size-3.5", pending && "animate-spin")} strokeWidth={1.75} />
       </button>

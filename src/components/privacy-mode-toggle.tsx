@@ -16,7 +16,7 @@ export function PrivacyModeToggle() {
       onClick={toggle}
       aria-label={isPrivate ? "Show financial figures" : "Hide financial figures"}
       aria-pressed={isPrivate}
-      className="cursor-pointer border-none bg-transparent p-0 text-muted-foreground transition-colors duration-200 ease-out hover:text-foreground"
+      className="-m-2 flex cursor-pointer items-center justify-center rounded-md border-none bg-transparent p-2 text-muted-foreground outline-none transition-colors duration-150 ease-out hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       {isPrivate ? (
         <EyeOff className="size-4" strokeWidth={1.75} />
