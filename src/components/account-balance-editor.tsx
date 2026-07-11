@@ -4,6 +4,7 @@ import { useState } from "react";
 import { saveAccountBalance } from "@/app/accounts/actions";
 import { Button } from "@/components/ui/button";
 import type { AccountRowData } from "@/lib/accounts";
+import { fieldClass } from "@/lib/ui";
 
 export function AccountBalanceEditor({ account }: { account: AccountRowData }) {
   const [editing, setEditing] = useState(false);
@@ -52,7 +53,7 @@ export function AccountBalanceEditor({ account }: { account: AccountRowData }) {
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder="0.00"
-            className="w-28 rounded-md border border-border bg-background px-2 py-1 text-sm tabular-nums"
+            className={`${fieldClass} w-28 tabular-nums`}
           />
           <Button type="button" size="sm" onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save"}

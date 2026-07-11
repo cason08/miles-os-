@@ -10,6 +10,17 @@ const ACCENT_STYLES = {
   neutral: "text-muted-foreground",
 } as const
 
+// DESIGN_SYSTEM_V2.md §8/§10 -- a low-opacity tinted chip behind the icon
+// (same accent colour, not a new one) gives the card a hair more visual
+// weight without introducing colour that isn't already meaningful.
+const ICON_CHIP_STYLES = {
+  primary: "bg-primary/10",
+  assets: "bg-assets/10",
+  liabilities: "bg-liabilities/10",
+  rewards: "bg-rewards/10",
+  neutral: "bg-muted",
+} as const
+
 type MetricAccent = keyof typeof ACCENT_STYLES
 
 const TREND_STYLES = {
@@ -57,15 +68,22 @@ function MetricCard({
       className={cn("gap-3", padding === "spacious" && "p-8", className)}
     >
       <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">{label}</span>
+        {/* DESIGN_SYSTEM_V2.md §8 -- uppercase + tracked label is the
+         * "premium dashboard" typographic move (Linear/Vercel both use
+         * it) that pushes hierarchy further without touching colour. */}
+        <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          {label}
+        </span>
         {Icon && (
-          <Icon className={cn("size-4", ACCENT_STYLES[accent])} strokeWidth={1.75} />
+          <div className={cn("flex size-8 items-center justify-center rounded-lg", ICON_CHIP_STYLES[accent])}>
+            <Icon className={cn("size-4", ACCENT_STYLES[accent])} strokeWidth={1.75} />
+          </div>
         )}
       </div>
       <div
         className={cn(
           "font-semibold tabular-nums",
-          size === "hero" ? "text-4xl sm:text-5xl" : "text-3xl"
+          size === "hero" ? "text-4xl tracking-tight sm:text-5xl" : "text-3xl"
         )}
       >
         {value}

@@ -4,8 +4,9 @@ import { useState } from "react";
 import { createCategoryAction, updateCategoryAction } from "@/app/categories/actions";
 import { Button } from "@/components/ui/button";
 import type { CategoryInput } from "@/lib/categories";
+import { fieldClass as baseFieldClass } from "@/lib/ui";
 
-const fieldClass = "w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm";
+const fieldClass = `${baseFieldClass} w-full`;
 
 const DEFAULT_COLOR = "#6b7280";
 
@@ -97,7 +98,7 @@ export function CategoryForm({
           <div className="flex items-center gap-2">
             <input
               type="color"
-              className="h-8 w-10 shrink-0 rounded-md border border-border bg-background"
+              className="h-8 w-10 shrink-0 rounded-md border border-border/70 bg-background outline-none transition-colors duration-150 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               value={color}
               onChange={(e) => setColor(e.target.value)}
             />

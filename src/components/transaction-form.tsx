@@ -4,8 +4,9 @@ import { useState } from "react";
 import { createTransactionAction, updateTransactionAction } from "@/app/transactions/actions";
 import { Button } from "@/components/ui/button";
 import type { TransactionInput } from "@/lib/transactions";
+import { fieldClass as baseFieldClass } from "@/lib/ui";
 
-const fieldClass = "w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm";
+const fieldClass = `${baseFieldClass} w-full`;
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);

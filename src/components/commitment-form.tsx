@@ -4,9 +4,9 @@ import { useState } from "react";
 import { createCommitmentAction, updateCommitmentAction } from "@/app/commitments/actions";
 import { Button } from "@/components/ui/button";
 import { COMMITMENT_TYPE_LABELS, type CommitmentInput } from "@/lib/commitment-types";
+import { fieldClass as baseFieldClass } from "@/lib/ui";
 
-const fieldClass =
-  "w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm";
+const fieldClass = `${baseFieldClass} w-full`;
 
 export function CommitmentForm({
   accountOptions,

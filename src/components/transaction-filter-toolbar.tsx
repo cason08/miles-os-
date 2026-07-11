@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-
-const fieldClass = "rounded-md border border-border bg-background px-2 py-1.5 text-sm";
+import { fieldClass } from "@/lib/ui";
 
 const DATE_RANGE_OPTIONS = [
   { value: "all", label: "All Time" },

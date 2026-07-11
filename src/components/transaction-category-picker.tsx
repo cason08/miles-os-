@@ -57,7 +57,7 @@ export function TransactionCategoryPicker({
   return (
     <div className="flex flex-col items-end gap-0.5">
       <select
-        className="rounded-md border border-border bg-background px-1.5 py-1 text-xs text-muted-foreground disabled:opacity-60"
+        className="rounded-md border border-border/70 bg-background px-1.5 py-1 text-xs text-muted-foreground outline-none transition-colors duration-150 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60"
         value={value}
         onChange={handleChange}
         disabled={saving}
