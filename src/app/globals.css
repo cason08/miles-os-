@@ -135,13 +135,15 @@
   --shadow-md-value: 0 4px 12px -2px oklch(0 0 0 / 0.28), 0 1px 0 0 oklch(1 0 0 / 0.04) inset;
   --shadow-lg-value: 0 12px 28px -6px oklch(0 0 0 / 0.32), 0 1px 0 0 oklch(1 0 0 / 0.06) inset;
   /* DESIGN_SYSTEM_V2.md §6 -- an almost-imperceptible top-to-bottom fade
-     (card -> 3% lighter -> card), not a visible gradient. If you can
-     consciously see it, the 3% needs to come down, not up. */
-  --gradient-card: linear-gradient(
-    180deg,
-    color-mix(in oklch, var(--card), white 3%) 0%,
-    var(--card) 100%
-  );
+     (a hair lighter -> --card), not a visible gradient. If you can
+     consciously see it, the top stop needs to come down, not up.
+     Written as a literal oklch value (0.18 -> 0.21 lightness), not
+     color-mix(var(--card), white) -- that form gets silently stripped by
+     Lightning CSS's oklch-to-lab @supports fallback generation when one
+     color-mix operand is an unresolved custom property (confirmed by
+     inspecting the compiled output; the mix disappeared, leaving a flat
+     var(--card) on both gradient stops). Keep it literal here. */
+  --gradient-card: linear-gradient(180deg, oklch(0.21 0.004 260) 0%, var(--card) 100%);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);

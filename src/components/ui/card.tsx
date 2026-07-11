@@ -5,7 +5,12 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card"
       className={cn(
-        "flex flex-col gap-6 rounded-xl border border-border bg-card p-6 text-card-foreground",
+        // DESIGN_SYSTEM_V2.md §2/§4/§6 -- resting elevation is the
+        // lightness step (bg-card) + hairline border + soft shadow +
+        // almost-imperceptible top-to-bottom gradient, never a heavier
+        // shadow alone. bg-card is kept as a solid fallback beneath the
+        // gradient image, not removed.
+        "flex flex-col gap-6 rounded-xl border border-border bg-card bg-[image:var(--gradient-card)] p-6 text-card-foreground shadow-sm",
         className
       )}
       {...props}
