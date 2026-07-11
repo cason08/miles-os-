@@ -5,6 +5,7 @@ import { createCommitmentAction, updateCommitmentAction } from "@/app/commitment
 import { Button } from "@/components/ui/button";
 import { COMMITMENT_TYPE_LABELS, type CommitmentInput } from "@/lib/commitment-types";
 import { fieldClass as baseFieldClass } from "@/lib/ui";
+import { toast } from "@/lib/toast";
 
 const fieldClass = `${baseFieldClass} w-full`;
 
@@ -56,8 +57,10 @@ export function CommitmentForm({
 
     if ("error" in result) {
       setError(result.error);
+      toast.error("Couldn't save commitment", result.error);
       return;
     }
+    toast.success(initial ? "Commitment updated" : "Commitment created");
     onDone();
   }
 

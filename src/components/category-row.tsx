@@ -4,6 +4,7 @@ import { useState } from "react";
 import { archiveCategoryAction, deleteCategoryAction } from "@/app/categories/actions";
 import { Button } from "@/components/ui/button";
 import type { CategoryData } from "@/lib/categories";
+import { toast } from "@/lib/toast";
 
 function formatCurrency(amount: number, currency: string): string {
   const symbol = currency === "SGD" ? "S$" : `${currency} `;
@@ -39,7 +40,12 @@ export function CategoryRow({
     setError(null);
     const result = await archiveCategoryAction(category.id);
     setBusy(false);
-    if ("error" in result) setError(result.error);
+    if ("error" in result) {
+      setError(result.error);
+      toast.error("Couldn't archive category", result.error);
+      return;
+    }
+    toast.success("Category archived");
   }
 
   async function handleDelete() {
@@ -49,8 +55,10 @@ export function CategoryRow({
     setBusy(false);
     if ("error" in result) {
       setError(result.error);
+      toast.error("Couldn't delete category", result.error);
       return;
     }
+    toast.success("Category deleted");
     setConfirmingDelete(false);
   }
 

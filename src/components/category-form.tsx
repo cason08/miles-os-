@@ -5,6 +5,7 @@ import { createCategoryAction, updateCategoryAction } from "@/app/categories/act
 import { Button } from "@/components/ui/button";
 import type { CategoryInput } from "@/lib/categories";
 import { fieldClass as baseFieldClass } from "@/lib/ui";
+import { toast } from "@/lib/toast";
 
 const fieldClass = `${baseFieldClass} w-full`;
 
@@ -52,8 +53,10 @@ export function CategoryForm({
 
     if ("error" in result) {
       setError(result.error);
+      toast.error("Couldn't save category", result.error);
       return;
     }
+    toast.success(initial ? "Category updated" : "Category created");
     onDone();
   }
 

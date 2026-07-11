@@ -5,6 +5,7 @@ import { createTransactionAction, updateTransactionAction } from "@/app/transact
 import { Button } from "@/components/ui/button";
 import type { TransactionInput } from "@/lib/transactions";
 import { fieldClass as baseFieldClass } from "@/lib/ui";
+import { toast } from "@/lib/toast";
 
 const fieldClass = `${baseFieldClass} w-full`;
 
@@ -54,8 +55,10 @@ export function TransactionForm({
 
     if ("error" in result) {
       setError(result.error);
+      toast.error("Couldn't save transaction", result.error);
       return;
     }
+    toast.success(initial ? "Transaction updated" : "Transaction added");
     onDone();
   }
 

@@ -5,6 +5,7 @@ import { saveAccountBalance } from "@/app/accounts/actions";
 import { Button } from "@/components/ui/button";
 import type { AccountRowData } from "@/lib/accounts";
 import { fieldClass } from "@/lib/ui";
+import { toast } from "@/lib/toast";
 
 export function AccountBalanceEditor({ account }: { account: AccountRowData }) {
   const [editing, setEditing] = useState(false);
@@ -30,8 +31,10 @@ export function AccountBalanceEditor({ account }: { account: AccountRowData }) {
     setSaving(false);
     if ("error" in result) {
       setError(result.error);
+      toast.error("Couldn't update balance", result.error);
       return;
     }
+    toast.success("Balance updated");
     setEditing(false);
   }
 

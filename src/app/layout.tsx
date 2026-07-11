@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { PrivacyModeProvider } from "@/components/privacy-mode-provider";
+import { ToastProvider } from "@/components/toast-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,7 +30,9 @@ export default function RootLayout({
       className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <PrivacyModeProvider>{children}</PrivacyModeProvider>
+        <PrivacyModeProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </PrivacyModeProvider>
       </body>
     </html>
   );

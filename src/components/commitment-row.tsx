@@ -9,6 +9,7 @@ import {
   type CommitmentStatus,
   type CommitmentWithStatus,
 } from "@/lib/commitment-types";
+import { toast } from "@/lib/toast";
 
 const STATUS_LABEL: Record<CommitmentStatus, string> = {
   paid: "Paid",
@@ -56,8 +57,10 @@ export function CommitmentRow({
     setDeleting(false);
     if ("error" in result) {
       setError(result.error);
+      toast.error("Couldn't delete commitment", result.error);
       return;
     }
+    toast.success("Commitment deleted");
     setConfirmingDelete(false);
   }
 
